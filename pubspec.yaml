@@ -1,7 +1,7 @@
 name: kryvon
 description: "Structured mobile security baseline framework for Flutter applications."
 version: 0.0.1
-homepage:
+homepage: https://github.com/imsuraj024/kryvon
 
 environment:
   sdk: ^3.9.2
