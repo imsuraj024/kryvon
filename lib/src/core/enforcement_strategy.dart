@@ -1,0 +1,4 @@
+enum EnforcementStrategy {
+  emitOnly,
+  terminateApp,
+}
