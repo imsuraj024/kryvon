@@ -5,10 +5,23 @@ import '../../core/threat_type.dart';
 import '../../internal/logger.dart';
 import 'debugger_detector.dart';
 
+/// [Guard] implementation that checks for attached debuggers or debug signals.
+///
+/// Auto-registered by [Kryvon.initialize]. Severity is mapped from the
+/// most serious indicator present:
+///
+/// | Indicator          | Severity  |
+/// |--------------------|-----------|
+/// | `tracerPid`        | critical  |
+/// | `androidDebugger`  | high      |
+/// | `systemDebuggable` | high      |
+/// | `jdwpEnabled`      | medium    |
+/// | `debuggableApp`    | medium    |
+/// | (none)             | low       |
 class DebuggerGuard implements Guard {
-
   final DebuggerDetector _detector;
 
+  /// Creates a [DebuggerGuard], optionally injecting a custom [detector].
   DebuggerGuard({DebuggerDetector? detector})
       : _detector = detector ?? const DebuggerDetector();
 

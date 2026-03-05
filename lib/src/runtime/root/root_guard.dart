@@ -9,9 +9,21 @@ import 'package:kryvon/src/runtime/root/root_indicator.dart';
 import 'root_detection_result.dart';
 import 'root_detector.dart';
 
+/// [Guard] implementation that checks for device root indicators.
+///
+/// Auto-registered by [Kryvon.initialize]. Severity is mapped from the
+/// most serious [RootIndicatorType] present:
+///
+/// | Indicator(s)                                      | Severity  |
+/// |---------------------------------------------------|-----------|
+/// | [RootIndicatorType.suExecution]                   | critical  |
+/// | suBinary / dangerousProps / writableSystem        | high      |
+/// | knownRootApp / testKeys                           | medium    |
+/// | (none of the above)                               | low       |
 class RootGuard implements Guard {
   final RootDetector _detector;
 
+  /// Creates a [RootGuard], optionally injecting a custom [detector].
   RootGuard({RootDetector? detector})
       : _detector = detector ?? const RootDetector();
 

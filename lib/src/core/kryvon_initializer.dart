@@ -10,17 +10,31 @@ import 'package:kryvon/src/runtime/root/root_guard.dart';
 import 'guard.dart';
 import 'kryvon_policy.dart';
 
+/// Primary entry point for the Kryvon security framework.
+///
+/// Call [initialize] once at app startup (e.g. in `main()`), then call
+/// [runChecks] whenever you want to evaluate the device's security posture —
+/// typically on app resume or before sensitive operations.
+///
+/// ```dart
+/// await Kryvon.initialize(policy: KryvonPolicy.fintech());
+/// await Kryvon.runChecks();
+/// ```
 class Kryvon {
   static late KryvonPolicy _policy;
   static final List<Guard> _guards = [];
 
+  /// Configures Kryvon with the supplied [policy] and [logLevel].
+  ///
+  /// Auto-registers [RootGuard] and [DebuggerGuard]. Must be called before
+  /// [runChecks].
   static void initialize({
     required KryvonPolicy policy,
     LogLevel logLevel = LogLevel.info,
   }) {
     _policy = policy;
     KryvonLogger.configure(level: logLevel);
-    
+
     // Auto-register root guard
     if (!_guards.any((g) => g is RootGuard || g is DebuggerGuard)) {
       registerGuard(RootGuard());
@@ -30,11 +44,22 @@ class Kryvon {
     KryvonLogger.info("Kryvon initialized");
   }
 
+  /// Registers a custom [Guard] to be run alongside the built-in guards.
+  ///
+  /// Must be called after [initialize] and before [runChecks].
   static void registerGuard(Guard guard) {
     _guards.add(guard);
     KryvonLogger.debug("Registered guards count: ${_guards.length}");
   }
 
+  /// Runs all registered guards in parallel and enforces policy on the result.
+  ///
+  /// For each guard that detects a threat, [KryvonPolicy.onThreat] is called
+  /// with the individual [ThreatEvent]. After all guards complete, the events
+  /// are aggregated by [RuntimeRiskAggregator] into a single
+  /// [ThreatType.deviceCompromised] event. If the aggregated severity meets or
+  /// exceeds [KryvonPolicy.blockThreshold], [EnforcementExecutor] is invoked
+  /// with the configured [EnforcementStrategy].
   static Future<void> runChecks() async {
     KryvonLogger.debug("Running security guards");
 
