@@ -1,6 +1,18 @@
 import 'severity.dart';
 import 'threat_event.dart';
 
+/// Combines individual [ThreatEvent]s into a single aggregated [ThreatSeverity].
+///
+/// The algorithm assigns a numeric score per event (low=1, medium=3, high=6,
+/// critical=10) and adds a diversity bonus of +2 for each unique [ThreatType]
+/// present. The final score is then mapped back to a [ThreatSeverity]:
+///
+/// | Score  | Severity  |
+/// |--------|-----------|
+/// | < 3    | low       |
+/// | 3–5    | medium    |
+/// | 6–9    | high      |
+/// | ≥ 10   | critical  |
 class RuntimeRiskAggregator {
   const RuntimeRiskAggregator();
 
@@ -17,6 +29,9 @@ class RuntimeRiskAggregator {
     }
   }
 
+  /// Computes the aggregated [ThreatSeverity] from [events].
+  ///
+  /// Returns [ThreatSeverity.low] when [events] is empty.
   static ThreatSeverity aggregate(List<ThreatEvent> events) {
     if (events.isEmpty) return ThreatSeverity.low;
 

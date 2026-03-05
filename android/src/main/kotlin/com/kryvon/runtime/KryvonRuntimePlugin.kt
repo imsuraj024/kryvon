@@ -20,6 +20,9 @@ class KryvonRuntimePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         if (call.method == "checkRoot") {
             val detector = RootDetector(context)
             result.success(detector.checkRoot())
+        } if (call.method == "checkDebugger") {
+            val detector = DebuggerDetector(context)
+            result.success(detector.checkDebugger())
         } else {
             result.notImplemented()
         }

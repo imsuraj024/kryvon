@@ -8,4 +8,9 @@ class RuntimeChannel {
     final result = await _channel.invokeMethod('checkRoot');
     return result as Map<dynamic, dynamic>;
   }
+
+  static Future<Map<dynamic, dynamic>> checkDebugger() async {
+    final result = await _channel.invokeMethod('checkDebugger');
+    return result as Map<dynamic, dynamic>;
+  }
 }
