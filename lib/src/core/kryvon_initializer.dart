@@ -33,50 +33,59 @@ class Kryvon {
     KryvonLogger.debug("Registered guards count: ${_guards.length}");
   }
 
-static Future<void> runChecks() async {
-  KryvonLogger.debug("Running security guards");
+  static Future<void> runChecks() async {
+    KryvonLogger.debug("Running security guards");
 
-  final List<ThreatEvent> events = [];
-
-  for (final guard in _guards) {
     try {
-      final result = await guard.check();
-      events.addAll(result);
+      final futures = _guards.map((guard) async {
+        try {
+          return await guard.check();
+        } catch (e) {
+          KryvonLogger.error(
+            "Guard execution failed",
+            metadata: {"guard": guard.runtimeType.toString(), "error": e.toString()},
+          );
+          return <ThreatEvent>[];
+        }
+      });
 
-      for (final event in result) {
+      final results = await Future.wait(futures);
+
+      final List<ThreatEvent> allEvents = results.expand((e) => e).toList();
+
+      for (final event in allEvents) {
         KryvonLogger.threat(event);
         _policy.onThreat?.call(event);
       }
 
+      final aggregatedSeverity =
+          RuntimeRiskAggregator.aggregate(allEvents);
+
+      KryvonLogger.info(
+        "Aggregated device risk",
+        metadata: {"severity": aggregatedSeverity.name},
+      );
+
+      final aggregatedEvent = ThreatEvent(
+        type: ThreatType.deviceCompromised,
+        severity: aggregatedSeverity,
+        metadata: {
+          "events": allEvents.map((e) => e.type.name).toList(),
+        },
+      );
+
+      if (_policy.shouldBlock(aggregatedEvent)) {
+        EnforcementExecutor.execute(
+          strategy: _policy.enforcementStrategy,
+          event: aggregatedEvent,
+        );
+      }
     } catch (e) {
       KryvonLogger.error(
-        "Guard execution failed",
+        "Kryvon runtime check failed",
         metadata: {"error": e.toString()},
       );
     }
   }
 
-  final aggregatedSeverity =
-      RuntimeRiskAggregator.aggregate(events);
-
-  KryvonLogger.info(
-    "Aggregated device risk",
-    metadata: {"severity": aggregatedSeverity.name},
-  );
-
-  final aggregatedEvent = ThreatEvent(
-    type: ThreatType.deviceCompromised,
-    severity: aggregatedSeverity,
-    metadata: {
-      "events": events.map((e) => e.type.name).toList(),
-    },
-  );
-
-  if (_policy.shouldBlock(aggregatedEvent)) {
-    EnforcementExecutor.execute(
-      strategy: _policy.enforcementStrategy,
-      event: aggregatedEvent,
-    );
-  }
-}
 }
