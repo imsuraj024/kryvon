@@ -27,6 +27,10 @@ class DebuggerDetector(private val context: Context) {
             indicators.add("debuggableApp")
         }
 
+        if (isSystemDebuggable()) {
+            indicators.add("systemDebuggable")
+        }
+
         return mapOf(
             "indicators" to indicators
         )
@@ -59,20 +63,28 @@ class DebuggerDetector(private val context: Context) {
     }
 
     private fun isJdwpEnabled(): Boolean {
-        return try {
-
-            val process = Runtime.getRuntime().exec("ps")
-
-            val output = process.inputStream.bufferedReader().readText()
-
-            output.contains("jdwp")
-
-        } catch (e: Exception) {
-            false
-        }
+        return Debug.isDebuggerConnected()
     }
 
     private fun isAppDebuggable(): Boolean {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
+
+    private fun isSystemDebuggable(): Boolean {
+        return try {
+
+            val process = Runtime.getRuntime().exec(
+                arrayOf("getprop", "ro.debuggable")
+            )
+
+            val value = process.inputStream
+                .bufferedReader()
+                .readLine()
+
+            value == "1"
+
+        } catch (e: Exception) {
+            false
+        }
     }
 }

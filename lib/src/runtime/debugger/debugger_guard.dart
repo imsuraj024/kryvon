@@ -65,6 +65,10 @@ class DebuggerGuard implements Guard {
       return ThreatSeverity.high;
     }
 
+    if (indicators.contains("systemDebuggable")) {
+      return ThreatSeverity.high;
+    }
+
     if (indicators.contains("jdwpEnabled")) {
       return ThreatSeverity.medium;
     }
