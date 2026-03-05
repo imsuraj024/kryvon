@@ -4,6 +4,7 @@ import 'package:kryvon/src/core/threat_event.dart';
 import 'package:kryvon/src/core/threat_type.dart';
 import 'package:kryvon/src/internal/log_level.dart';
 import 'package:kryvon/src/internal/logger.dart';
+import 'package:kryvon/src/runtime/debugger/debugger_guard.dart';
 import 'package:kryvon/src/runtime/root/root_guard.dart';
 
 import 'guard.dart';
@@ -21,8 +22,9 @@ class Kryvon {
     KryvonLogger.configure(level: logLevel);
     
     // Auto-register root guard
-    if (!_guards.any((g) => g is RootGuard)) {
+    if (!_guards.any((g) => g is RootGuard || g is DebuggerGuard)) {
       registerGuard(RootGuard());
+      registerGuard(DebuggerGuard());
     }
 
     KryvonLogger.info("Kryvon initialized");
