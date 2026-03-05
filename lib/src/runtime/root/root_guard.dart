@@ -26,9 +26,12 @@ class RootGuard implements Guard {
         return [];
       }
 
+      final ThreatSeverity severity = _mapSeverity(result.indicators);
+
       KryvonLogger.warning(
         "RootGuard: root indicators detected",
         metadata: {
+          "severity": severity.name,
           "indicators":
               result.indicators.map((e) => e.name).toList(),
         },
@@ -37,10 +40,12 @@ class RootGuard implements Guard {
       return [
         ThreatEvent(
           type: ThreatType.rootDetected,
-          severity: _mapSeverity(result.indicators),
+          severity: severity,
           metadata: {
+            "severity": severity.name,
             "indicators":
                 result.indicators.map((e) => e.name).toList(),
+                
           },
         ),
       ];
@@ -60,10 +65,16 @@ class RootGuard implements Guard {
   }
 
   if (indicators.contains(RootIndicatorType.suBinary) ||
-      indicators.contains(RootIndicatorType.dangerousProps)) {
+      indicators.contains(RootIndicatorType.dangerousProps) ||
+      indicators.contains(RootIndicatorType.writableSystem)) {
     return ThreatSeverity.high;
   }
 
-  return ThreatSeverity.medium;
+  if (indicators.contains(RootIndicatorType.knownRootApp) ||
+      indicators.contains(RootIndicatorType.testKeys)) {
+    return ThreatSeverity.medium;
+  }
+
+  return ThreatSeverity.low;
 }
 }

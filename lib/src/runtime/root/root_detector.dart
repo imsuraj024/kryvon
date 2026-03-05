@@ -6,7 +6,6 @@ class RootDetector {
   const RootDetector();
 
   Future<RootDetectionResult> check() async {
-    print("Calling native root detection...");
     final response = await RuntimeChannel.checkRoot();
 
     final List<dynamic> rawIndicators =

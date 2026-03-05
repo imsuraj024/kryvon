@@ -1,4 +1,7 @@
 import 'package:kryvon/src/core/enforcement_executor.dart';
+import 'package:kryvon/src/core/runtime_risk_aggregator.dart';
+import 'package:kryvon/src/core/threat_event.dart';
+import 'package:kryvon/src/core/threat_type.dart';
 import 'package:kryvon/src/internal/log_level.dart';
 import 'package:kryvon/src/internal/logger.dart';
 import 'package:kryvon/src/runtime/root/root_guard.dart';
@@ -30,30 +33,50 @@ class Kryvon {
     KryvonLogger.debug("Registered guards count: ${_guards.length}");
   }
 
-  static Future<void> runChecks() async {
-    KryvonLogger.debug("Running security guards");
-    for (final guard in _guards) {
-      try {
-      final events = await guard.check();
+static Future<void> runChecks() async {
+  KryvonLogger.debug("Running security guards");
 
-      for (final event in events) {
+  final List<ThreatEvent> events = [];
+
+  for (final guard in _guards) {
+    try {
+      final result = await guard.check();
+      events.addAll(result);
+
+      for (final event in result) {
         KryvonLogger.threat(event);
-
         _policy.onThreat?.call(event);
-
-        if (_policy.shouldBlock(event)) {
-          EnforcementExecutor.execute(
-            strategy: _policy.enforcementStrategy,
-            event: event,
-          );
-        }
       }
+
     } catch (e) {
       KryvonLogger.error(
         "Guard execution failed",
         metadata: {"error": e.toString()},
       );
     }
-    }
   }
+
+  final aggregatedSeverity =
+      RuntimeRiskAggregator.aggregate(events);
+
+  KryvonLogger.info(
+    "Aggregated device risk",
+    metadata: {"severity": aggregatedSeverity.name},
+  );
+
+  final aggregatedEvent = ThreatEvent(
+    type: ThreatType.deviceCompromised,
+    severity: aggregatedSeverity,
+    metadata: {
+      "events": events.map((e) => e.type.name).toList(),
+    },
+  );
+
+  if (_policy.shouldBlock(aggregatedEvent)) {
+    EnforcementExecutor.execute(
+      strategy: _policy.enforcementStrategy,
+      event: aggregatedEvent,
+    );
+  }
+}
 }

@@ -4,4 +4,5 @@ enum ThreatType {
   emulatorDetected,
   insecureStorage,
   networkPinningFailure,
+  deviceCompromised,
 }

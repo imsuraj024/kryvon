@@ -35,13 +35,6 @@ class RootDetector(private val context: Context) {
             indicators.add("knownRootApp")
         }
 
-        println("Kryvon Native: suBinary=${hasSuBinary()}")
-        println("Kryvon Native: suExecution=${canExecuteSu()}")
-        println("Kryvon Native: testKeys=${hasTestKeys()}")
-        println("Kryvon Native: dangerousProps=${hasDangerousSystemProperties()}")
-        println("Kryvon Native: writableSystem=${hasWritableSystemPartition()}")
-        println("Kryvon Native: knownRootApp=${hasKnownRootApps()}")
-
         return mapOf(
             "indicators" to indicators
         )
