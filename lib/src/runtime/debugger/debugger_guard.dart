@@ -19,21 +19,27 @@ class DebuggerGuard implements Guard {
 
       final result = await _detector.check();
 
-      if (!result.debuggerAttached) {
-        KryvonLogger.debug("DebuggerGuard: no debugger attached");
+      if (!result.debuggerDetected) {
+        KryvonLogger.debug(
+            "DebuggerGuard: no debugger detected");
         return [];
       }
 
+      final severity = _calculateSeverity(result.indicators);
+
       KryvonLogger.warning(
         "DebuggerGuard: debugger detected",
+        metadata: {
+          "indicators": result.indicators
+        },
       );
 
       return [
         ThreatEvent(
           type: ThreatType.debuggerDetected,
-          severity: ThreatSeverity.medium,
+          severity: severity,
           metadata: {
-            "debuggerAttached": true
+            "indicators": result.indicators
           },
         )
       ];
@@ -47,5 +53,26 @@ class DebuggerGuard implements Guard {
 
       return [];
     }
+  }
+
+  ThreatSeverity _calculateSeverity(List<String> indicators) {
+
+    if (indicators.contains("tracerPid")) {
+      return ThreatSeverity.critical;
+    }
+
+    if (indicators.contains("androidDebugger")) {
+      return ThreatSeverity.high;
+    }
+
+    if (indicators.contains("jdwpEnabled")) {
+      return ThreatSeverity.medium;
+    }
+
+    if (indicators.contains("debuggableApp")) {
+      return ThreatSeverity.medium;
+    }
+
+    return ThreatSeverity.low;
   }
 }

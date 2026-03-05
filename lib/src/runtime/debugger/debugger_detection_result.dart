@@ -1,7 +1,11 @@
 class DebuggerDetectionResult {
-  final bool debuggerAttached;
+
+  final List<String> indicators;
 
   const DebuggerDetectionResult({
-    required this.debuggerAttached,
+    required this.indicators,
   });
+
+  bool get debuggerDetected => indicators.isNotEmpty;
+
 }
