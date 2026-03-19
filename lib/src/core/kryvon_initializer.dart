@@ -1,10 +1,15 @@
 import 'package:kryvon/src/core/enforcement_executor.dart';
+import 'package:kryvon/src/core/enforcement_strategy.dart';
 import 'package:kryvon/src/core/runtime_risk_aggregator.dart';
+import 'package:kryvon/src/core/severity.dart';
 import 'package:kryvon/src/core/threat_event.dart';
 import 'package:kryvon/src/core/threat_type.dart';
 import 'package:kryvon/src/internal/log_level.dart';
 import 'package:kryvon/src/internal/logger.dart';
 import 'package:kryvon/src/runtime/debugger/debugger_guard.dart';
+import 'package:kryvon/src/runtime/emulator/emulator_guard.dart';
+import 'package:kryvon/src/runtime/hook/hook_guard.dart';
+import 'package:kryvon/src/runtime/integrity/integrity_guard.dart';
 import 'package:kryvon/src/runtime/root/root_guard.dart';
 
 import 'guard.dart';
@@ -26,8 +31,8 @@ class Kryvon {
 
   /// Configures Kryvon with the supplied [policy] and [logLevel].
   ///
-  /// Auto-registers [RootGuard] and [DebuggerGuard]. Must be called before
-  /// [runChecks].
+  /// Auto-registers [RootGuard], [DebuggerGuard], [HookGuard],
+  /// [EmulatorGuard], and [IntegrityGuard]. Must be called before [runChecks].
   static void initialize({
     required KryvonPolicy policy,
     LogLevel logLevel = LogLevel.info,
@@ -35,10 +40,12 @@ class Kryvon {
     _policy = policy;
     KryvonLogger.configure(level: logLevel);
 
-    // Auto-register root guard
-    if (!_guards.any((g) => g is RootGuard || g is DebuggerGuard)) {
+    if (_guards.isEmpty) {
       registerGuard(RootGuard());
       registerGuard(DebuggerGuard());
+      registerGuard(HookGuard());
+      registerGuard(EmulatorGuard());
+      registerGuard(IntegrityGuard(policy: policy));
     }
 
     KryvonLogger.info("Kryvon initialized");
@@ -69,24 +76,41 @@ class Kryvon {
           return await guard.check();
         } catch (e) {
           KryvonLogger.error(
-            "Guard execution failed",
+            "Guard execution failed — treating as compromise",
             metadata: {"guard": guard.runtimeType.toString(), "error": e.toString()},
           );
-          return <ThreatEvent>[];
+          // Fail-secure: an unexpected guard failure is treated as evidence
+          // of hook-based suppression rather than a silent no-op.
+          return <ThreatEvent>[
+            ThreatEvent(
+              type: ThreatType.hookDetected,
+              severity: ThreatSeverity.critical,
+              metadata: {
+                "guard": guard.runtimeType.toString(),
+                "reason": "guard_execution_failed",
+              },
+            ),
+          ];
         }
       });
 
       final results = await Future.wait(futures);
-
       final List<ThreatEvent> allEvents = results.expand((e) => e).toList();
 
       for (final event in allEvents) {
         KryvonLogger.threat(event);
         _policy.onThreat?.call(event);
+
+        // Enforce immediately for hook and integrity threats — do not wait
+        // for aggregation, as these invalidate all other security controls.
+        final immediateStrategy = _policy.strategyForType(event.type);
+        if (immediateStrategy == EnforcementStrategy.blockApp) {
+          EnforcementExecutor.execute(strategy: immediateStrategy, event: event);
+          return;
+        }
       }
 
-      final aggregatedSeverity =
-          RuntimeRiskAggregator.aggregate(allEvents);
+      final aggregatedSeverity = RuntimeRiskAggregator.aggregate(allEvents);
 
       KryvonLogger.info(
         "Aggregated device risk",
@@ -96,9 +120,7 @@ class Kryvon {
       final aggregatedEvent = ThreatEvent(
         type: ThreatType.deviceCompromised,
         severity: aggregatedSeverity,
-        metadata: {
-          "events": allEvents.map((e) => e.type.name).toList(),
-        },
+        metadata: {"events": allEvents.map((e) => e.type.name).toList()},
       );
 
       if (_policy.shouldBlock(aggregatedEvent)) {
@@ -108,9 +130,18 @@ class Kryvon {
         );
       }
     } catch (e) {
+      // Fail-secure: if the orchestrator itself throws, block immediately.
       KryvonLogger.error(
-        "Kryvon runtime check failed",
+        "Kryvon runtime check failed — blocking app",
         metadata: {"error": e.toString()},
+      );
+      EnforcementExecutor.execute(
+        strategy: EnforcementStrategy.blockApp,
+        event: ThreatEvent(
+          type: ThreatType.hookDetected,
+          severity: ThreatSeverity.critical,
+          metadata: {"reason": "orchestrator_failure"},
+        ),
       );
     }
   }

@@ -22,21 +22,36 @@ class EnforcementExecutor {
         break;
 
       case EnforcementStrategy.terminateApp:
+      case EnforcementStrategy.blockApp:
         _terminate(event);
+        break;
+
+      case EnforcementStrategy.restrictFeatures:
+        _restrict(event);
         break;
     }
   }
 
   static void _terminate(ThreatEvent event) {
     KryvonLogger.error(
-      "Application terminated due to security policy",
+      "Application blocked due to security policy",
       metadata: {
         "threatType": event.type.name,
         "severity": event.severity.name,
       },
     );
-
-    // Android-safe termination
     exit(1);
+  }
+
+  static void _restrict(ThreatEvent event) {
+    KryvonLogger.warning(
+      "Application features restricted due to security policy",
+      metadata: {
+        "threatType": event.type.name,
+        "severity": event.severity.name,
+      },
+    );
+    // Feature restriction is signalled via the onThreat callback.
+    // The host app is responsible for gating sensitive flows.
   }
 }

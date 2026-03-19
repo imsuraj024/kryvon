@@ -17,14 +17,22 @@ class KryvonRuntimePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        if (call.method == "checkRoot") {
-            val detector = RootDetector(context)
-            result.success(detector.checkRoot())
-        } if (call.method == "checkDebugger") {
-            val detector = DebuggerDetector(context)
-            result.success(detector.checkDebugger())
-        } else {
-            result.notImplemented()
+        // Echo the nonce back so the Dart bridge can validate response authenticity.
+        val nonce = call.argument<String>("__nonce")
+
+        fun withNonce(payload: Map<String, Any?>): Map<String, Any?> =
+            if (nonce != null) payload + ("__nonce" to nonce) else payload
+
+        when (call.method) {
+            "checkRoot" -> result.success(withNonce(RootDetector(context).checkRoot()))
+            "checkDebugger" -> result.success(withNonce(DebuggerDetector(context).checkDebugger()))
+            "checkHook" -> result.success(withNonce(HookDetector(context).checkHook()))
+            "checkEmulator" -> result.success(withNonce(EmulatorDetector(context).checkEmulator()))
+            "checkIntegrity" -> {
+                val expectedSha256 = call.argument<String>("expectedSha256")
+                result.success(withNonce(IntegrityDetector(context).checkIntegrity(expectedSha256)))
+            }
+            else -> result.notImplemented()
         }
     }
 

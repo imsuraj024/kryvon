@@ -9,6 +9,12 @@ enum ThreatType {
   /// The app is running inside an emulator or virtual device.
   emulatorDetected,
 
+  /// A runtime hooking framework (Frida, Xposed, Substrate) was detected.
+  hookDetected,
+
+  /// The app's signing certificate or package integrity check failed.
+  integrityFailure,
+
   /// Sensitive data is stored in an insecure location.
   insecureStorage,
 
