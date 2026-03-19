@@ -17,14 +17,16 @@ class KryvonRuntimePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        if (call.method == "checkRoot") {
-            val detector = RootDetector(context)
-            result.success(detector.checkRoot())
-        } if (call.method == "checkDebugger") {
-            val detector = DebuggerDetector(context)
-            result.success(detector.checkDebugger())
-        } else {
-            result.notImplemented()
+        when (call.method) {
+            "checkRoot" -> result.success(RootDetector(context).checkRoot())
+            "checkDebugger" -> result.success(DebuggerDetector(context).checkDebugger())
+            "checkHook" -> result.success(HookDetector(context).checkHook())
+            "checkEmulator" -> result.success(EmulatorDetector(context).checkEmulator())
+            "checkIntegrity" -> {
+                val expectedSha256 = call.argument<String>("expectedSha256")
+                result.success(IntegrityDetector(context).checkIntegrity(expectedSha256))
+            }
+            else -> result.notImplemented()
         }
     }
 

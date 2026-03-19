@@ -1,31 +1,45 @@
 import 'severity.dart';
 import 'threat_event.dart';
+import 'threat_type.dart';
 
 /// Combines individual [ThreatEvent]s into a single aggregated [ThreatSeverity].
 ///
-/// The algorithm assigns a numeric score per event (low=1, medium=3, high=6,
-/// critical=10) and adds a diversity bonus of +2 for each unique [ThreatType]
-/// present. The final score is then mapped back to a [ThreatSeverity]:
+/// Each [ThreatType] carries a base risk score reflecting its severity:
+///
+/// | Threat type        | Base score |
+/// |--------------------|------------|
+/// | hookDetected       | 50         |
+/// | integrityFailure   | 50         |
+/// | rootDetected       | 30         |
+/// | debuggerDetected   | 20         |
+/// | emulatorDetected   | 20         |
+/// | (other)            | 5          |
+///
+/// The total score is mapped to [ThreatSeverity]:
 ///
 /// | Score  | Severity  |
 /// |--------|-----------|
-/// | < 3    | low       |
-/// | 3–5    | medium    |
-/// | 6–9    | high      |
-/// | ≥ 10   | critical  |
+/// | < 20   | low       |
+/// | 20–29  | medium    |
+/// | 30–49  | high      |
+/// | ≥ 50   | critical  |
 class RuntimeRiskAggregator {
   const RuntimeRiskAggregator();
 
-  static int _score(ThreatSeverity severity) {
-    switch (severity) {
-      case ThreatSeverity.low:
-        return 1;
-      case ThreatSeverity.medium:
-        return 3;
-      case ThreatSeverity.high:
-        return 6;
-      case ThreatSeverity.critical:
-        return 10;
+  static int _typeScore(ThreatType type) {
+    switch (type) {
+      case ThreatType.hookDetected:
+        return 50;
+      case ThreatType.integrityFailure:
+        return 50;
+      case ThreatType.rootDetected:
+        return 30;
+      case ThreatType.debuggerDetected:
+        return 20;
+      case ThreatType.emulatorDetected:
+        return 20;
+      default:
+        return 5;
     }
   }
 
@@ -36,22 +50,13 @@ class RuntimeRiskAggregator {
     if (events.isEmpty) return ThreatSeverity.low;
 
     int totalScore = 0;
-
     for (final event in events) {
-      totalScore += _score(event.severity);
+      totalScore += _typeScore(event.type);
     }
 
-    final uniqueThreats =
-      events.map((e) => e.type).toSet().length;
-
-    final diversityBonus = uniqueThreats * 2;
-
-    final finalScore = totalScore + diversityBonus;
-
-    if (finalScore >= 10) return ThreatSeverity.critical;
-    if (finalScore >= 6) return ThreatSeverity.high;
-    if (finalScore >= 3) return ThreatSeverity.medium;
-
+    if (totalScore >= 50) return ThreatSeverity.critical;
+    if (totalScore >= 30) return ThreatSeverity.high;
+    if (totalScore >= 20) return ThreatSeverity.medium;
     return ThreatSeverity.low;
   }
 }
