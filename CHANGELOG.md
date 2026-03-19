@@ -7,6 +7,28 @@ and the project follows Semantic Versioning.
 
 ---
 
+## [0.3.0] - 2026-03-19
+
+### Added
+
+- **HookGuard** for detecting Frida, Xposed, and Substrate instrumentation frameworks.
+- **EmulatorGuard** for detecting Android emulator environments (QEMU, Genymotion, generic fingerprints).
+- **IntegrityGuard** for APK signing certificate verification via SHA-256.
+- Per-type enforcement strategies (`blockApp`, `restrictFeatures`) via `KryvonPolicy.strategyForType`.
+- Nonce-based `MethodChannel` response validation via `SecureRuntimeBridge`.
+
+### Security
+
+The new guards defend against runtime instrumentation, emulator-based analysis, and repackaged APK distribution. Hook and integrity violations trigger immediate `blockApp` enforcement, bypassing the risk aggregator. This completes Kryvon's runtime integrity baseline alongside **RootGuard** and **DebuggerGuard**.
+
+### Internal
+
+- Risk scoring switched to per-type flat weights.
+- MethodChannel name XOR-obfuscated at source level.
+- All five guards auto-register in `Kryvon.initialize()`.
+
+---
+
 ## [0.2.0] - 2026-03-06
 
 ### Added
