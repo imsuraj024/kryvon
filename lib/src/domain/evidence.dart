@@ -18,8 +18,4 @@ class Evidence {
   final String platform;
   final DateTime observedAt;
   final Map<String, Object?> metadata;
-
-  bool get isPositive => status == EvidenceStatus.detected;
-  bool get isTerminalFailure =>
-      status == EvidenceStatus.failed || status == EvidenceStatus.unsupported;
 }
