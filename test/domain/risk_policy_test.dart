@@ -1,9 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../lib/src/domain/assessment.dart';
-import '../../lib/src/domain/kryvon_enums.dart';
-import '../../lib/src/domain/policy.dart';
-import '../../lib/src/domain/risk.dart';
+import 'package:kryvon/src/domain/assessment.dart';
+import 'package:kryvon/src/domain/kryvon_enums.dart';
+import 'package:kryvon/src/domain/policy.dart';
+import 'package:kryvon/src/domain/risk.dart';
 
 Assessment assessment({
   String id = 'a1',
@@ -24,34 +23,32 @@ void main() {
   group('RiskEvaluator', () {
     const evaluator = RiskEvaluator();
 
-    test('returns unknown when there are no assessments', () {
+    test('returns unknown for no assessments', () {
       final result = evaluator.evaluate(const []);
       expect(result.level, RiskLevel.unknown);
       expect(result.contributors, isEmpty);
     });
 
-    test('maps low severity to low risk', () {
-      final result = evaluator.evaluate([
-        assessment(severity: Severity.low),
-      ]);
-      expect(result.level, RiskLevel.lowRisk);
+    test('maps severity to risk', () {
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.low)]).level,
+        RiskLevel.lowRisk,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.medium)]).level,
+        RiskLevel.elevated,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.high)]).level,
+        RiskLevel.highRisk,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.critical)]).level,
+        RiskLevel.critical,
+      );
     });
 
-    test('maps medium severity to elevated risk', () {
-      final result = evaluator.evaluate([
-        assessment(severity: Severity.medium),
-      ]);
-      expect(result.level, RiskLevel.elevated);
-    });
-
-    test('maps high severity with high confidence to high risk', () {
-      final result = evaluator.evaluate([
-        assessment(severity: Severity.high),
-      ]);
-      expect(result.level, RiskLevel.highRisk);
-    });
-
-    test('maps high severity with low confidence to elevated risk and uncertainty', () {
+    test('preserves low-confidence uncertainty', () {
       final result = evaluator.evaluate([
         assessment(severity: Severity.high, confidence: Confidence.low),
       ]);
@@ -59,14 +56,7 @@ void main() {
       expect(result.uncertainties, isNotEmpty);
     });
 
-    test('maps critical severity to critical risk', () {
-      final result = evaluator.evaluate([
-        assessment(severity: Severity.critical),
-      ]);
-      expect(result.level, RiskLevel.critical);
-    });
-
-    test('preserves every assessment as a contributor', () {
+    test('preserves assessment contributors', () {
       final result = evaluator.evaluate([
         assessment(id: 'a1', severity: Severity.low),
         assessment(id: 'a2', severity: Severity.high),
@@ -79,52 +69,61 @@ void main() {
     const policy = KryvonPolicy();
 
     test('allows low risk', () {
-      final result = policy.decide(
-        context: AssessmentContext.appStartup,
-        risk: const RiskAssessment(level: RiskLevel.lowRisk),
+      expect(
+        policy.decide(
+          context: AssessmentContext.appStartup,
+          risk: const RiskAssessment(level: RiskLevel.lowRisk, contributors: []),
+        ),
+        KryvonDecision.allow,
       );
-      expect(result, KryvonDecision.allow);
     });
 
     test('monitors elevated startup risk', () {
-      final result = policy.decide(
-        context: AssessmentContext.appStartup,
-        risk: const RiskAssessment(level: RiskLevel.elevated),
+      expect(
+        policy.decide(
+          context: AssessmentContext.appStartup,
+          risk: const RiskAssessment(level: RiskLevel.elevated, contributors: []),
+        ),
+        KryvonDecision.monitor,
       );
-      expect(result, KryvonDecision.monitor);
     });
 
     test('restricts elevated transaction risk', () {
-      final result = policy.decide(
-        context: AssessmentContext.transaction,
-        risk: const RiskAssessment(level: RiskLevel.elevated),
+      expect(
+        policy.decide(
+          context: AssessmentContext.transaction,
+          risk: const RiskAssessment(level: RiskLevel.elevated, contributors: []),
+        ),
+        KryvonDecision.restrict,
       );
-      expect(result, KryvonDecision.restrict);
     });
 
-    test('restricts high risk by default', () {
-      final result = policy.decide(
-        context: AssessmentContext.accountAccess,
-        risk: const RiskAssessment(level: RiskLevel.highRisk),
+    test('restricts high risk and blocks critical risk by default', () {
+      expect(
+        policy.decide(
+          context: AssessmentContext.accountAccess,
+          risk: const RiskAssessment(level: RiskLevel.highRisk, contributors: []),
+        ),
+        KryvonDecision.restrict,
       );
-      expect(result, KryvonDecision.restrict);
+      expect(
+        policy.decide(
+          context: AssessmentContext.transaction,
+          risk: const RiskAssessment(level: RiskLevel.critical, contributors: []),
+        ),
+        KryvonDecision.block,
+      );
     });
 
-    test('blocks critical risk by default', () {
-      final result = policy.decide(
-        context: AssessmentContext.transaction,
-        risk: const RiskAssessment(level: RiskLevel.critical),
-      );
-      expect(result, KryvonDecision.block);
-    });
-
-    test('uses the configured unknown decision', () {
+    test('supports a custom unknown-risk decision', () {
       const strict = KryvonPolicy(unknownDecision: KryvonDecision.block);
-      final result = strict.decide(
-        context: AssessmentContext.transaction,
-        risk: const RiskAssessment(level: RiskLevel.unknown),
+      expect(
+        strict.decide(
+          context: AssessmentContext.transaction,
+          risk: const RiskAssessment(level: RiskLevel.unknown, contributors: []),
+        ),
+        KryvonDecision.block,
       );
-      expect(result, KryvonDecision.block);
     });
   });
 }
