@@ -6,7 +6,7 @@ enum Severity { info, low, medium, high, critical }
 
 enum RiskLevel { unknown, lowRisk, elevated, highRisk, critical }
 
-enum KryvonContext {
+enum AssessmentContext {
   appStartup,
   sessionStart,
   authentication,
