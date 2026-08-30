@@ -1,7 +1,6 @@
 import 'assessment.dart';
 import 'kryvon_enums.dart';
 
-/// Explains why a risk level was produced.
 class RiskContributor {
   const RiskContributor({
     required this.assessmentId,
@@ -16,28 +15,24 @@ class RiskContributor {
   final String reason;
 }
 
-/// Aggregated security risk for an assessment run.
 class RiskAssessment {
   const RiskAssessment({
     required this.level,
     required this.contributors,
-    this.score,
     this.uncertainties = const <String>[],
   });
 
   final RiskLevel level;
-  final int? score;
   final List<RiskContributor> contributors;
   final List<String> uncertainties;
 }
 
-/// Conservative, deterministic risk evaluator for the initial engine.
 class RiskEvaluator {
   const RiskEvaluator();
 
   RiskAssessment evaluate(List<Assessment> assessments) {
     if (assessments.isEmpty) {
-      return const RiskAssessment(level: RiskLevel.unknown);
+      return const RiskAssessment(level: RiskLevel.unknown, contributors: []);
     }
 
     final contributors = assessments
@@ -64,9 +59,8 @@ class RiskEvaluator {
     }
 
     final level = switch (highestSeverity) {
-      Severity.info => RiskLevel.lowRisk,
-      Severity.low => RiskLevel.lowRisk,
-      Severity.medium => hasUncertainty ? RiskLevel.elevated : RiskLevel.elevated,
+      Severity.info || Severity.low => RiskLevel.lowRisk,
+      Severity.medium => RiskLevel.elevated,
       Severity.high => hasUncertainty ? RiskLevel.elevated : RiskLevel.highRisk,
       Severity.critical => RiskLevel.critical,
     };
