@@ -248,6 +248,49 @@ void main() {
       );
     });
 
+    test('rejects malformed rule definitions', () {
+      expect(() => rule(id: ' '), throwsArgumentError);
+      expect(() => rule(threat: ' '), throwsArgumentError);
+      expect(() => rule(reason: ' '), throwsArgumentError);
+      expect(() => rule(correlationKey: ' '), throwsArgumentError);
+      expect(() => rule(conflictGroup: ' '), throwsArgumentError);
+      expect(
+        () => rule(
+          requirements: [
+            EvidenceRequirement(
+              signalId: 'a',
+              expectedStatus: EvidenceStatus.detected,
+            ),
+            EvidenceRequirement(
+              signalId: ' a ',
+              expectedStatus: EvidenceStatus.detected,
+            ),
+          ],
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => rule(
+          requirements: [
+            EvidenceRequirement(
+              signalId: 'a',
+              expectedStatus: EvidenceStatus.failed,
+            ),
+          ],
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('preserves rule order for deterministic assessment output', () {
+      final result = AssessmentGenerator(rules: [
+        rule(id: 'second'),
+        rule(id: 'first'),
+      ]).generate(run(['a'], [evidence('a', EvidenceStatus.detected)]));
+
+      expect(result.assessments.map((assessment) => assessment.id), ['second', 'first']);
+    });
+
     test('returns immutable result collections', () {
       final result = AssessmentGenerator(rules: [rule()]).generate(
         run(['a'], [evidence('a', EvidenceStatus.detected)]),
