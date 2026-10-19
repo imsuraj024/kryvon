@@ -9,6 +9,7 @@ class DetectorOrchestrator {
   DetectorOrchestrator({
     required this.registry,
     this.timeout = const Duration(seconds: 3),
+    this.maxConcurrentSignals = 4,
   }) {
     if (timeout <= Duration.zero) {
       throw ArgumentError.value(
@@ -17,10 +18,21 @@ class DetectorOrchestrator {
         'Timeout must be positive.',
       );
     }
+    if (maxConcurrentSignals < 1) {
+      throw ArgumentError.value(
+        maxConcurrentSignals,
+        'maxConcurrentSignals',
+        'Concurrency limit must be positive.',
+      );
+    }
   }
 
   final DetectorRegistry registry;
   final Duration timeout;
+
+  /// Maximum in-flight signal evaluations for a single run.
+  final int maxConcurrentSignals;
+
   static int _nextRequestId = 0;
 
   Future<SignalRun> run({
@@ -28,24 +40,48 @@ class DetectorOrchestrator {
     required String platform,
     Map<String, Object?> configuration = const <String, Object?>{},
   }) async {
-    // Snapshot the run-level configuration before starting concurrent work.
+    // Snapshot run configuration before starting concurrent work.
     final configSnapshot = _freezeRunConfiguration(configuration);
-    final normalizedPlatform = platform.trim().isEmpty ? 'unknown' : platform.trim();
+    final normalizedPlatform =
+        platform.trim().isEmpty ? 'unknown' : platform.trim();
     final expected = registry.expectedSignals;
-    final outcomes = await Future.wait<Evidence>(
-      registry.registrations.expand(
-        (registration) => registration.signalIds.map(
-          (signalId) => _runOne(
-            detector: registration.detector,
-            signalId: signalId,
-            context: context,
-            platform: normalizedPlatform,
-            configuration: configSnapshot,
-          ),
-        ),
-      ),
+    final tasks = <_DetectorTask>[
+      for (final registration in registry.registrations)
+        for (final signalId in registration.signalIds)
+          _DetectorTask(registration.detector, signalId),
+    ];
+    final outcomes = List<Evidence?>.filled(tasks.length, null);
+    var nextIndex = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        // Dart isolate execution is single-threaded between awaits, so each
+        // task index is claimed by exactly one worker.
+        final index = nextIndex++;
+        if (index >= tasks.length) return;
+        final task = tasks[index];
+        outcomes[index] = await _runOne(
+          detector: task.detector,
+          signalId: task.signalId,
+          context: context,
+          platform: normalizedPlatform,
+          configuration: configSnapshot,
+        );
+      }
+    }
+
+    final workerCount = tasks.length < maxConcurrentSignals
+        ? tasks.length
+        : maxConcurrentSignals;
+    await Future.wait<void>(
+      List<Future<void>>.generate(workerCount, (_) => worker()),
     );
-    return SignalRun(expectedSignals: expected, outcomes: outcomes);
+
+    // Every task writes its slot, including operational failures.
+    return SignalRun(
+      expectedSignals: expected,
+      outcomes: outcomes.cast<Evidence>(),
+    );
   }
 
   Future<Evidence> _runOne({
@@ -93,6 +129,13 @@ class DetectorOrchestrator {
         observedAt: DateTime.now().toUtc(),
         metadata: <String, Object?>{'errorCode': code},
       );
+}
+
+class _DetectorTask {
+  const _DetectorTask(this.detector, this.signalId);
+
+  final SignalDetector detector;
+  final String signalId;
 }
 
 Map<String, Object?> _freezeRunConfiguration(Map<String, Object?> values) =>
