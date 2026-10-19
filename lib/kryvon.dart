@@ -9,3 +9,4 @@ export 'src/engine/kryvon_engine.dart';
 
 export 'src/engine/detector.dart';
 export 'src/engine/detector_orchestrator.dart';
+export 'src/engine/assessment_generator.dart';
