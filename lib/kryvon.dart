@@ -4,7 +4,6 @@
 /// evaluation, and host-owned enforcement decisions. Platform checks are
 /// local indicators, not remote attestation; sensitive operations must still
 /// be authorized by a trusted backend.
-library kryvon;
 
 export 'src/domain/assessment.dart';
 export 'src/domain/decision.dart';
