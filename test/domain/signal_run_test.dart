@@ -27,6 +27,7 @@ void main() {
       expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.notDetected), outcome('root', EvidenceStatus.notDetected)]).isComplete, isFalse);
       expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('other', EvidenceStatus.notDetected)]).isComplete, isFalse);
       expect(SignalRun(expectedSignals: [], outcomes: []).isComplete, isFalse);
+      expect(SignalRun(expectedSignals: ['   '], outcomes: [outcome('   ', EvidenceStatus.notDetected)]).isComplete, isFalse);
     });
   });
 
