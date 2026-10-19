@@ -89,6 +89,58 @@ void main() {
       expect(result.contributors, hasLength(3));
       expect(result.independentContributorCount, 2);
     });
+    test('does not infer correlation from a shared threat identifier', () {
+      final result = evaluator.evaluate([
+        assessment(id: 'same-threat-1'),
+        assessment(id: 'same-threat-2'),
+      ]);
+      expect(result.independentContributorCount, 2);
+    });
+
+    test('normalizes explicit correlation keys and treats blank keys as absent', () {
+      final grouped = evaluator.evaluate([
+        Assessment(
+          id: 'a1',
+          threat: 'ROOT',
+          severity: Severity.high,
+          confidence: Confidence.high,
+          supportingEvidence: const [],
+          reason: 'first observation',
+          correlationKey: ' device-root ',
+        ),
+        Assessment(
+          id: 'a2',
+          threat: 'ROOT',
+          severity: Severity.high,
+          confidence: Confidence.high,
+          supportingEvidence: const [],
+          reason: 'second observation',
+          correlationKey: 'device-root',
+        ),
+      ]);
+      expect(grouped.independentContributorCount, 1);
+
+      final direct = RiskAssessment(
+        level: RiskLevel.unknown,
+        contributors: const [
+          RiskContributor(
+            assessmentId: 'a1',
+            severity: Severity.low,
+            confidence: Confidence.high,
+            reason: 'no key',
+          ),
+          RiskContributor(
+            assessmentId: 'a2',
+            severity: Severity.low,
+            confidence: Confidence.high,
+            reason: 'blank key',
+            correlationKey: ' ',
+          ),
+        ],
+      );
+      expect(direct.independentContributorCount, 2);
+    });
+
   });
 
   group('KryvonPolicy', () {
