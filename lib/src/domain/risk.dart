@@ -39,10 +39,10 @@ class RiskAssessment {
     var uncorrelatedCount = 0;
     for (final contributor in contributors) {
       final key = contributor.correlationKey;
-      if (key == null) {
+      if (key == null || key.trim().isEmpty) {
         uncorrelatedCount++;
       } else {
-        correlationKeys.add(key);
+        correlationKeys.add(key.trim());
       }
     }
     return uncorrelatedCount + correlationKeys.length;
