@@ -81,13 +81,13 @@ class AndroidSignalEvaluatorTest {
             isExecutableRegularFile(0x8000 /* S_IFREG */ or 0x40 /* S_IXUSR */)
         )
         assertTrue(
-            isExecutableRegularFile(OsConstants.S_IFREG or 0x08 /* S_IXGRP */)
+            isExecutableRegularFile(0x8000 /* S_IFREG */ or 0x08 /* S_IXGRP */)
         )
         assertFalse(
-            isExecutableRegularFile(OsConstants.S_IFREG or 0x100 /* S_IRUSR */)
+            isExecutableRegularFile(0x8000 /* S_IFREG */ or 0x100 /* S_IRUSR */)
         )
         assertFalse(
-            isExecutableRegularFile(0x4000 /* S_IFDIR */ or OsConstants.S_IXUSR)
+            isExecutableRegularFile(0x4000 /* S_IFDIR */ or 0x40 /* S_IXUSR */)
         )
     }
 
