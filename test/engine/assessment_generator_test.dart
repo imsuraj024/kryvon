@@ -103,7 +103,7 @@ void main() {
       final result = AssessmentGenerator(
         rules: [
           rule(
-            requirements: const [
+            requirements: [
               EvidenceRequirement(
                 signalId: 'a',
                 expectedStatus: EvidenceStatus.detected,
