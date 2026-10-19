@@ -22,6 +22,17 @@ class KryvonPolicy {
   final KryvonDecision elevatedTransactionDecision;
   final KryvonDecision unknownDecision;
 
+  /// Throws when the policy identity is invalid. Called by the engine before
+  /// evaluating so const policy instances can still be used.
+  void validate() {
+    if (id.trim().isEmpty) {
+      throw ArgumentError.value(id, 'id', 'Policy ID must not be empty.');
+    }
+    if (version < 1) {
+      throw ArgumentError.value(version, 'version', 'Policy version must be positive.');
+    }
+  }
+
   KryvonDecision decide({required AssessmentContext context, required RiskAssessment risk}) {
     switch (risk.level) {
       case RiskLevel.unknown:
