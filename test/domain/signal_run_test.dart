@@ -18,7 +18,8 @@ void main() {
       expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.failed)]).isComplete, isFalse);
       expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.unsupported)]).isComplete, isFalse);
       expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.unknown)]).isComplete, isFalse);
-      expect(SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.notDetected, confidence: null)]).isComplete, isFalse);
+      final noConfidence = Evidence(signal: 'root', status: EvidenceStatus.notDetected, confidence: null, source: 'test', platform: 'test', observedAt: DateTime.utc(2026));
+      expect(SignalRun(expectedSignals: ['root'], outcomes: [noConfidence]).isComplete, isFalse);
     });
 
     test('rejects duplicate, unexpected, and empty expected signal identifiers', () {
