@@ -1,4 +1,4 @@
-name: Flutter CI
+name: Flutter and Android CI
 
 on:
   push:
@@ -6,14 +6,20 @@ on:
       - main
       - kryvon-rebuild
       - kryvon-orchestration
+      - kryvon-core-hardening
+      - kryvon-assessment-rules
+      - kryvon-android-detector
   pull_request:
     branches:
       - main
       - kryvon-rebuild
       - kryvon-orchestration
+      - kryvon-contracts
+      - kryvon-core-hardening
+      - kryvon-android-detector
 
 jobs:
-  test:
+  flutter:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -27,5 +33,21 @@ jobs:
         run: flutter pub get
       - name: Analyze
         run: flutter analyze
-      - name: Run tests
+      - name: Run Dart tests
         run: flutter test
+      - name: Create Android example host
+        run: flutter create --platforms=android --project-name kryvon_example example
+      - name: Add local Kryvon plugin dependency
+        working-directory: example
+        run: flutter pub add kryvon --path ..
+      - name: Pin example to Flutter-compatible Android tooling
+        run: |
+          sed -i 's/gradle-8\.12/gradle-8.14/' example/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/id("com.android.application") version "[^"]*"/id("com.android.application") version "8.11.1"/' example/android/settings.gradle.kts
+          sed -i 's/id("org.jetbrains.kotlin.android") version "[^"]*"/id("org.jetbrains.kotlin.android") version "2.2.20"/' example/android/settings.gradle.kts
+      - name: Build Android example
+        working-directory: example
+        run: flutter build apk --debug
+      - name: Run Android native unit tests
+        working-directory: example/android
+        run: ./gradlew :kryvon:testDebugUnitTest

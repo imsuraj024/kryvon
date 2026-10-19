@@ -9,3 +9,6 @@ export 'src/engine/kryvon_engine.dart';
 
 export 'src/engine/detector.dart';
 export 'src/engine/detector_orchestrator.dart';
+export 'src/engine/assessment_generator.dart';
+export 'src/engine/first_android_threat_rules.dart';
+export 'src/engine/android_platform_detector.dart';

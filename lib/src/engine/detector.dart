@@ -19,6 +19,9 @@ class DetectorRequest {
   final Map<String, Object?> configuration;
 }
 
+/// A detector may be invoked concurrently for different signals and from
+/// overlapping runs. Implementations must be re-entrant/concurrency-safe, or
+/// provide their own serialization and request/response correlation.
 abstract interface class SignalDetector {
   String get id;
   List<String> get signalIds;
