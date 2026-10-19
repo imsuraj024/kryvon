@@ -633,3 +633,17 @@ A coverage pass is complete only when the expected identifiers are non-empty and
 The core may infer `LOW_RISK` from a run with no assessments only when every expected signal returned `NOT_DETECTED` with `HIGH` confidence. Otherwise, missing or uncertain coverage remains `UNKNOWN`. Detected evidence without an assessment remains unknown until interpreted. Failed or unsupported checks must be preserved as uncertainty and must not erase independently assessed high risk.
 
 `RiskEvaluator` currently maps the highest assessment severity to a risk level and reports low/medium assessment confidence as uncertainty. `Assessment.correlationKey` and `RiskAssessment.independentContributorCount` provide explicit correlation grouping without deleting contributors. The engine does not infer correlation from similar names or reasons, and it does not yet implement an automatic correlation algorithm or weighted score. Any future scoring/threshold logic must use correlation groups to avoid counting correlated observations as independent. Correlation must be handled in the assessment/core layer, not separately inside each detector.
+
+
+# 21. Detector and Native Contract Gate
+
+The domain and risk core now has a successful Flutter CI run covering dependency resolution, static analysis, and tests. Assessment identifiers and policy identity/version are validated at the evaluation boundary. Correlation grouping is explicit and tested; no inference from shared threat names or similar descriptions is permitted.
+
+Before implementing a detector, use these detailed specifications:
+
+- [Detector orchestration contract](DETECTOR_ORCHESTRATION_CONTRACT.md)
+- [Native platform contract](NATIVE_PLATFORM_CONTRACT.md)
+
+The next implementation stage may add registry/orchestration infrastructure and protocol validation tests, but must not add concrete detectors or automatic assessment generation until those interfaces and their failure semantics have tests. In particular, registration must not imply a safe result, timeouts must not become negative observations, and late responses must not overwrite a timed-out pass.
+
+Native implementations remain a separate step after the Dart contracts are validated. No native platform implementation is included by the current contract-only change.
