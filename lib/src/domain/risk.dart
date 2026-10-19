@@ -32,7 +32,7 @@ class RiskAssessment {
       if (key == null || key.trim().isEmpty) {
         uncorrelatedCount++;
       } else {
-        correlationKeys.add(key);
+        correlationKeys.add(key.trim());
       }
     }
     return uncorrelatedCount + correlationKeys.length;
