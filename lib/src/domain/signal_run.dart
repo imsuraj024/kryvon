@@ -19,17 +19,25 @@ class SignalRun {
           expectedSignals.length;
 
   bool get isComplete {
-    if (!hasUniqueExpectedSignals) return false;
+    if (!hasUniqueExpectedSignals) {
+      return false;
+    }
     final expected = expectedSignals.toSet();
     final bySignal = <String, List<Evidence>>{};
     for (final outcome in outcomes) {
-      if (!expected.contains(outcome.signal)) return false;
+      if (!expected.contains(outcome.signal)) {
+        return false;
+      }
       bySignal.putIfAbsent(outcome.signal, () => <Evidence>[]).add(outcome);
     }
-    if (bySignal.length != expected.length) return false;
+    if (bySignal.length != expected.length) {
+      return false;
+    }
     for (final signal in expected) {
       final matching = bySignal[signal];
-      if (matching == null || matching.length != 1) return false;
+      if (matching == null || matching.length != 1) {
+        return false;
+      }
       final outcome = matching.single;
       if ((outcome.status != EvidenceStatus.detected && outcome.status != EvidenceStatus.notDetected) || outcome.confidence == null) return false;
     }
