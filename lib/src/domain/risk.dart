@@ -1,5 +1,6 @@
 import 'assessment.dart';
 import 'kryvon_enums.dart';
+import 'signal_run.dart';
 
 class RiskContributor {
   const RiskContributor({required this.assessmentId, required this.severity, required this.confidence, required this.reason});
@@ -23,24 +24,41 @@ class RiskAssessment {
 class RiskEvaluator {
   const RiskEvaluator();
 
-  RiskAssessment evaluate(List<Assessment> assessments) {
-    if (assessments.isEmpty) {
-      return RiskAssessment(level: RiskLevel.unknown, contributors: const <RiskContributor>[], uncertainties: const <String>['No assessments are available; risk cannot be established.']);
+  RiskAssessment evaluate(List<Assessment> assessments, {SignalRun? signalRun}) {
+    final contributors = assessments
+        .map((a) => RiskContributor(assessmentId: a.id, severity: a.severity, confidence: a.confidence, reason: a.reason))
+        .toList(growable: false);
+    final uncertainties = <String>[];
+
+    if (signalRun != null) uncertainties.addAll(signalRun.uncertainties);
+
+    for (final assessment in assessments) {
+      if (assessment.confidence == Confidence.low) {
+        uncertainties.add('Assessment "${assessment.id}" has low confidence.');
+      } else if (assessment.confidence == Confidence.medium) {
+        uncertainties.add('Assessment "${assessment.id}" has medium confidence.');
+      }
     }
-    final contributors = assessments.map((a) => RiskContributor(assessmentId: a.id, severity: a.severity, confidence: a.confidence, reason: a.reason)).toList(growable: false);
+
+    if (assessments.isEmpty) {
+      if (signalRun?.allNotDetected == true) {
+        return RiskAssessment(level: RiskLevel.lowRisk, contributors: contributors, uncertainties: uncertainties);
+      }
+      if (signalRun == null) {
+        uncertainties.add('No assessments or signal coverage were supplied; risk cannot be established.');
+      } else if (signalRun.isComplete) {
+        uncertainties.add('Signal evidence exists but no assessment interpreted it.');
+      }
+      return RiskAssessment(level: RiskLevel.unknown, contributors: contributors, uncertainties: uncertainties);
+    }
+
     var highestRank = -1;
     var highestSeverity = Severity.info;
-    final uncertainties = <String>[];
     for (final assessment in assessments) {
       final rank = _severityRank(assessment.severity);
       if (rank > highestRank) {
         highestRank = rank;
         highestSeverity = assessment.severity;
-      }
-      if (assessment.confidence == Confidence.low) {
-        uncertainties.add('Assessment "${assessment.id}" has low confidence.');
-      } else if (assessment.confidence == Confidence.medium) {
-        uncertainties.add('Assessment "${assessment.id}" has medium confidence.');
       }
     }
     final level = switch (highestSeverity) {
