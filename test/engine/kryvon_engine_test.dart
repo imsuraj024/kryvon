@@ -1,15 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryvon/kryvon.dart';
 
-Assessment assessment({String id = 'root-signal', Severity severity = Severity.high, Confidence confidence = Confidence.high}) {
-  return Assessment(id: id, threat: 'ROOT_INDICATOR', severity: severity, confidence: confidence, supportingEvidence: const [], reason: 'A test assessment.');
-}
+Assessment assessment({String id = 'root-signal', Severity severity = Severity.high, Confidence confidence = Confidence.high}) => Assessment(id: id, threat: 'ROOT_INDICATOR', severity: severity, confidence: confidence, supportingEvidence: const [], reason: 'A test assessment.');
+Evidence outcome(String signal, EvidenceStatus status) => Evidence(signal: signal, status: status, confidence: status == EvidenceStatus.failed || status == EvidenceStatus.unknown || status == EvidenceStatus.unsupported ? null : Confidence.high, source: 'test', platform: 'test', observedAt: DateTime.utc(2026));
 
 void main() {
   const engine = KryvonEngine();
 
   group('KryvonEngine', () {
-    test('returns an explainable unknown result when no assessments are supplied', () {
+    test('returns an explainable unknown result when neither assessments nor coverage are supplied', () {
       final result = engine.evaluate(context: AssessmentContext.appStartup, assessments: const []);
       expect(result.risk.level, RiskLevel.unknown);
       expect(result.decision, KryvonDecision.monitor);
@@ -18,12 +17,28 @@ void main() {
       expect(result.reason, contains('not a detected threat'));
     });
 
+    test('complete all-negative coverage can establish low risk', () {
+      final run = SignalRun(expectedSignals: ['root', 'debug'], outcomes: [outcome('root', EvidenceStatus.notDetected), outcome('debug', EvidenceStatus.notDetected)]);
+      final result = engine.evaluate(context: AssessmentContext.appStartup, assessments: const [], signalRun: run);
+      expect(result.risk.level, RiskLevel.lowRisk);
+      expect(result.decision, KryvonDecision.allow);
+      expect(result.uncertainties, isEmpty);
+    });
+
+    test('does not treat failed coverage as safe', () {
+      final run = SignalRun(expectedSignals: ['root'], outcomes: [outcome('root', EvidenceStatus.failed)]);
+      final result = engine.evaluate(context: AssessmentContext.appStartup, assessments: const [], signalRun: run);
+      expect(result.risk.level, RiskLevel.unknown);
+      expect(result.decision, KryvonDecision.monitor);
+      expect(result.risk.uncertainties, isNotEmpty);
+    });
+
     test('connects assessment, risk, policy and result in one call', () {
       final result = engine.evaluate(context: AssessmentContext.accountAccess, assessments: [assessment()]);
       expect(result.risk.level, RiskLevel.highRisk);
       expect(result.decision, KryvonDecision.restrict);
       expect(result.risk.contributors.single.assessmentId, 'root-signal');
-      expect(result.reason, contains('RESTRICT'));
+      expect(result.reason, contains('restrict'));
       expect(result.reason, contains('accountAccess'));
     });
 
@@ -52,7 +67,7 @@ void main() {
 
   group('domain collection immutability', () {
     test('assessment snapshots its supporting evidence list', () {
-      final evidence = Evidence(signal: 'test', status: EvidenceStatus.detected, confidence: Confidence.high, source: 'unit-test', platform: 'test', observedAt: DateTime.utc(2026), metadata: {'key': 'value'});
+      final evidence = outcome('test', EvidenceStatus.detected);
       final source = <Evidence>[evidence];
       final item = Assessment(id: 'a', threat: 't', severity: Severity.low, confidence: Confidence.high, supportingEvidence: source, reason: 'test');
       source.clear();
