@@ -32,7 +32,7 @@ AssessmentRule rule({
       correlationKey: correlationKey,
       conflictGroup: conflictGroup,
       requirements: requirements ??
-          const [
+          [
             EvidenceRequirement(
               signalId: 'a',
               expectedStatus: EvidenceStatus.detected,
@@ -79,7 +79,7 @@ void main() {
       final result = AssessmentGenerator(
         rules: [
           rule(
-            requirements: const [
+            requirements: [
               EvidenceRequirement(
                 signalId: 'a',
                 expectedStatus: EvidenceStatus.detected,
