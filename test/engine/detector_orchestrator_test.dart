@@ -147,8 +147,36 @@ void main() {
       expect(run.isComplete, isFalse);
     });
 
+    test('limits in-flight signal evaluations and preserves output order', () async {
+      var active = 0;
+      var peakActive = 0;
+      final registry = DetectorRegistry([
+        FakeDetector('bounded', ['a', 'b', 'c', 'd', 'e'], (request) async {
+          active++;
+          if (active > peakActive) peakActive = active;
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          active--;
+          return result(request.signalId, EvidenceStatus.notDetected,
+              confidence: Confidence.high);
+        }),
+      ]);
+
+      final run = await DetectorOrchestrator(
+        registry: registry,
+        maxConcurrentSignals: 2,
+      ).run(
+        context: AssessmentContext.appStartup,
+        platform: 'test',
+      );
+
+      expect(peakActive, lessThanOrEqualTo(2));
+      expect(run.outcomes.map((e) => e.signal), ['a', 'b', 'c', 'd', 'e']);
+      expect(run.isComplete, isTrue);
+    });
+
     test('rejects a non-positive timeout', () {
       expect(() => DetectorOrchestrator(registry: DetectorRegistry([]), timeout: Duration.zero), throwsArgumentError);
+      expect(() => DetectorOrchestrator(registry: DetectorRegistry([]), maxConcurrentSignals: 0), throwsArgumentError);
     });
 
     test('isolates concurrent run request IDs', () async {
