@@ -44,6 +44,60 @@ void main() {
   });
 
   group('DetectorOrchestrator', () {
+    test('snapshots detector signal ownership at registry creation', () async {
+      final signals = <String>['a'];
+      final registry = DetectorRegistry([
+        FakeDetector('mutable-definition', signals, (request) async {
+          return result(request.signalId, EvidenceStatus.notDetected,
+              confidence: Confidence.high);
+        }),
+      ]);
+      signals
+        ..clear()
+        ..add('changed-after-registration');
+
+      expect(registry.expectedSignals, ['a']);
+      expect(registry.ownerOf('a'), isNotNull);
+      expect(registry.ownerOf('changed-after-registration'), isNull);
+      final run = await DetectorOrchestrator(registry: registry).run(
+        context: AssessmentContext.appStartup,
+        platform: 'test',
+      );
+      expect(run.outcomes.single.signal, 'a');
+      expect(run.isComplete, isTrue);
+    });
+
+    test('configuration is a deep immutable snapshot', () async {
+      final nestedList = <Object?>['before'];
+      final nestedMap = <String, Object?>{'items': nestedList};
+      final configuration = <String, Object?>{'nested': nestedMap};
+      final registry = DetectorRegistry([
+        FakeDetector('config', ['a'], (request) async {
+          expect(
+            () => (request.configuration['nested'] as Map)['new'] = true,
+            throwsUnsupportedError,
+          );
+          expect(
+            () => ((request.configuration['nested'] as Map)['items'] as List)
+                .add('mutate'),
+            throwsUnsupportedError,
+          );
+          return result('a', EvidenceStatus.notDetected,
+              confidence: Confidence.high);
+        }),
+      ]);
+      final pending = DetectorOrchestrator(registry: registry).run(
+        context: AssessmentContext.appStartup,
+        platform: 'test',
+        configuration: configuration,
+      );
+      nestedList[0] = 'after';
+      nestedMap['extra'] = true;
+      await pending;
+      // The detector sees the snapshot captured before asynchronous work starts.
+      expect(nestedList, ['after']);
+    });
+
     test('preserves registry order despite completion order', () async {
       final registry = DetectorRegistry([
         FakeDetector('slow-first', ['a'], (_) async {
