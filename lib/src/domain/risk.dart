@@ -3,7 +3,14 @@ import 'kryvon_enums.dart';
 import 'signal_run.dart';
 
 class RiskContributor {
-  const RiskContributor({required this.assessmentId, required this.severity, required this.confidence, required this.reason, this.correlationKey});
+  const RiskContributor({
+    required this.assessmentId,
+    required this.severity,
+    required this.confidence,
+    required this.reason,
+    this.correlationKey,
+  });
+
   final String assessmentId;
   final Severity severity;
   final Confidence confidence;
@@ -14,8 +21,11 @@ class RiskContributor {
 /// Aggregate risk with traceable contributors and explicit uncertainty.
 /// Confidence is retained as uncertainty; it never silently downgrades severity.
 class RiskAssessment {
-  RiskAssessment({required this.level, required List<RiskContributor> contributors, List<String> uncertainties = const <String>[]})
-      : contributors = List<RiskContributor>.unmodifiable(contributors),
+  RiskAssessment({
+    required this.level,
+    required List<RiskContributor> contributors,
+    List<String> uncertainties = const <String>[],
+  })  : contributors = List<RiskContributor>.unmodifiable(contributors),
         uncertainties = List<String>.unmodifiable(uncertainties);
 
   final RiskLevel level;
@@ -29,10 +39,10 @@ class RiskAssessment {
     var uncorrelatedCount = 0;
     for (final contributor in contributors) {
       final key = contributor.correlationKey;
-      if (key == null || key.trim().isEmpty) {
+      if (key == null) {
         uncorrelatedCount++;
       } else {
-        correlationKeys.add(key.trim());
+        correlationKeys.add(key);
       }
     }
     return uncorrelatedCount + correlationKeys.length;
@@ -43,13 +53,18 @@ class RiskEvaluator {
   const RiskEvaluator();
 
   RiskAssessment evaluate(List<Assessment> assessments, {SignalRun? signalRun}) {
-    final contributors = assessments.map((a) => RiskContributor(
-      assessmentId: a.id,
-      severity: a.severity,
-      confidence: a.confidence,
-      reason: a.reason,
-      correlationKey: a.correlationKey,
-    )).toList(growable: false);
+    _validateAssessments(assessments);
+    final contributors = assessments
+        .map(
+          (assessment) => RiskContributor(
+            assessmentId: assessment.id,
+            severity: assessment.severity,
+            confidence: assessment.confidence,
+            reason: assessment.reason,
+            correlationKey: assessment.correlationKey?.trim(),
+          ),
+        )
+        .toList(growable: false);
     final uncertainties = <String>[];
     if (signalRun != null) uncertainties.addAll(signalRun.uncertainties);
     for (final assessment in assessments) {
@@ -90,6 +105,29 @@ class RiskEvaluator {
       Severity.critical => RiskLevel.critical,
     };
     return RiskAssessment(level: level, contributors: contributors, uncertainties: uncertainties);
+  }
+
+  void _validateAssessments(List<Assessment> assessments) {
+    final ids = <String>{};
+    for (final assessment in assessments) {
+      final id = assessment.id.trim();
+      if (id.isEmpty) {
+        throw ArgumentError.value(assessment.id, 'assessments.id', 'Assessment IDs must not be empty.');
+      }
+      if (!ids.add(id)) {
+        throw ArgumentError.value(assessment.id, 'assessments', 'Assessment IDs must be unique within an evaluation.');
+      }
+      if (assessment.threat.trim().isEmpty) {
+        throw ArgumentError.value(assessment.threat, 'assessments.threat', 'Threat identifiers must not be empty.');
+      }
+      if (assessment.reason.trim().isEmpty) {
+        throw ArgumentError.value(assessment.reason, 'assessments.reason', 'Assessment reasons must not be empty.');
+      }
+      final key = assessment.correlationKey;
+      if (key != null && key.trim().isEmpty) {
+        throw ArgumentError.value(key, 'assessments.correlationKey', 'Correlation keys must be null or non-empty.');
+      }
+    }
   }
 
   int _severityRank(Severity severity) => switch (severity) {
