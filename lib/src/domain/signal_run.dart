@@ -39,7 +39,11 @@ class SignalRun {
         return false;
       }
       final outcome = matching.single;
-      if ((outcome.status != EvidenceStatus.detected && outcome.status != EvidenceStatus.notDetected) || outcome.confidence == null) return false;
+      if ((outcome.status != EvidenceStatus.detected &&
+          outcome.status != EvidenceStatus.notDetected) ||
+          outcome.confidence == null) {
+        return false;
+      }
     }
     return true;
   }
@@ -76,7 +80,9 @@ class SignalRun {
       if (count == 0) issues.add('Signal "$signal" has no outcome.');
       if (count > 1) issues.add('Signal "$signal" has multiple outcomes.');
     }
-    if (!hasUniqueExpectedSignals) issues.add('Expected signal identifiers must be non-empty and unique.');
+    if (!hasUniqueExpectedSignals) {
+      issues.add('Expected signal identifiers must be non-empty and unique.');
+    }
     return List<String>.unmodifiable(issues);
   }
 }
