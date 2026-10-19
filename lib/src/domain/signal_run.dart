@@ -12,7 +12,9 @@ class SignalRun {
   final List<Evidence> outcomes;
 
   bool get hasUniqueExpectedSignals => expectedSignals.isNotEmpty &&
-      expectedSignals.every((signal) => signal.trim().isNotEmpty) &&
+      expectedSignals.every(
+        (signal) => signal.trim().isNotEmpty && signal == signal.trim(),
+      ) &&
       expectedSignals.map((signal) => signal.trim()).toSet().length ==
           expectedSignals.length;
 
