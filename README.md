@@ -1,141 +1,73 @@
-<div align="center">
+# Kryvon
 
-# KRYVON
+Kryvon is a runtime security assessment and policy engine for Flutter applications.
 
-**Flutter Security Baseline**
+The `kryvon-rebuild` branch is being rebuilt from first principles. The deterministic core is implemented without platform detectors or native integrations.
 
-A guard-based runtime security layer for Android Flutter applications.
-
-<br>
-
-[![Dart](https://img.shields.io/badge/Dart-3.9%2B-0175C2?logo=dart&logoColor=white)](https://dart.dev/) [![Flutter](https://img.shields.io/badge/Flutter-3.3%2B-02569B?logo=flutter&logoColor=white)](https://flutter.dev/) [![Android](https://img.shields.io/badge/Android-Supported-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
-
-**Detect → Aggregate → Enforce**
-
-</div>
-
----
-
-## Why Kryvon?
-
-Mobile security checks are often scattered through application code. Kryvon puts them behind a small, policy-driven pipeline so security signals can be detected consistently and handled deliberately.
-
-It runs built-in guards in parallel, aggregates threat signals, and applies configurable enforcement. The runtime is designed to fail secure: bridge failures and guard failures are treated as compromise signals.
-
-> **Platform:** Android only. iOS support is not currently implemented.
-
-## What it covers
-
-| Area | Current implementation |
-| --- | --- |
-| Root | 6 native indicators with severity mapping |
-| Debugger | 5 native debugger signals |
-| Hooking | Frida, Xposed and Substrate detection |
-| Emulator | QEMU, Genymotion and Android fingerprints |
-| Integrity | APK signing certificate SHA-256 verification |
-| Runtime | Parallel guards, risk aggregation and policy enforcement |
-| Transport | Nonce-validated `MethodChannel` bridge |
-| Extensibility | Custom `Guard` implementations |
-
-## Architecture
+## Core model
 
 ```text
-Flutter application
-        │
-        ▼
-   Kryvon.runChecks()
-        │
-        ├── RootGuard ────────► native RootDetector
-        ├── DebuggerGuard ────► native DebuggerDetector
-        ├── HookGuard ────────► native HookDetector
-        ├── EmulatorGuard ────► native EmulatorDetector
-        ├── IntegrityGuard ───► native IntegrityDetector
-        └── Custom guards
-                │
-                ▼
-        ThreatEvent collection
-                │
-        ┌───────┴────────┐
-        │                │
-   Immediate        Risk aggregation
-   enforcement             │
-        │                  ▼
-        └──────────► Policy enforcement
+Expected signals + outcomes → Assessment → Risk → Policy → Decision → Host application
 ```
 
-Native communication passes through `SecureRuntimeBridge`. Every request carries a cryptographically random nonce that the native side must echo. A mismatch, null response or exception becomes a compromise signal.
+Kryvon separates observations from interpretation and application decisions. The core engine accepts caller-supplied assessments and an optional `SignalRun` describing expected signal coverage. It does not execute detectors or enforce the returned decision.
 
-## Quick start
-
-```yaml
-dependencies:
-  kryvon: ^0.3.0
-```
+## Example
 
 ```dart
-Kryvon.initialize(
-  policy: KryvonPolicy(
-    blockThreshold: ThreatSeverity.high,
-    enforcementStrategy: EnforcementStrategy.emitOnly,
-    onThreat: (event) {
-      print('Threat: ${event.type.name} [${event.severity.name}]');
-    },
-  ),
+import 'package:kryvon/kryvon.dart';
+
+const engine = KryvonEngine();
+final result = engine.evaluate(
+  context: AssessmentContext.transaction,
+  assessments: assessments,
+  signalRun: signalRun,
 );
 
-await Kryvon.runChecks();
+if (result.decision == KryvonDecision.block) {
+  // The host application owns the response.
+}
 ```
 
-For a stricter preset:
+## Core semantics
 
-```dart
-Kryvon.initialize(policy: KryvonPolicy.fintech());
-await Kryvon.runChecks();
-```
+- No assessments and no coverage means `unknown` risk, not a detected threat.
+- Risk follows the highest assessed severity; confidence is surfaced as uncertainty and does not silently downgrade severity.
+- Missing, failed, unknown, unsupported, duplicate, or unexpected signal outcomes are explicit coverage gaps.
+- A low-risk result from negative signal outcomes requires every expected signal to have exactly one outcome and every negative outcome to have high confidence.
+- Detected signal evidence without an interpreting assessment remains `unknown`; the engine does not invent a threat conclusion.
+- Policy maps risk and context to a configurable decision.
+- Evidence metadata, supporting evidence, signal outcomes, contributors, and uncertainty collections are read-only snapshots.
 
-## Enforcement model
+## Current state
 
-Kryvon separates **detection** from **response**. Individual events can trigger immediate handling, while the full set of signals is also aggregated into a device-compromise assessment.
+Implemented:
 
-Built-in defaults include immediate `blockApp` handling for hook and integrity violations, `restrictFeatures` for root detection, and configurable policy behavior for other threats.
+- Evidence and assessment domain models, including explicit correlation keys.
+- Explicit severity-to-risk mapping and confidence uncertainty.
+- Signal coverage contract and failure semantics.
+- Configurable policy decisions.
+- Deterministic assessment-to-decision engine.
+- Domain and engine unit tests.
+- GitHub Actions workflow for `flutter analyze` and `flutter test`.
 
-## Engineering notes
+Not yet implemented:
 
-- Guards execute concurrently with `Future.wait`.
-- Individual threat events remain observable through `onThreat`.
-- Risk aggregation uses weighted threat types.
-- Bridge failures fail secure rather than silently continuing.
-- Custom guards can extend the detection pipeline.
+- Assessment generation and signal correlation/deduplication.
+- Runtime detectors or detector orchestration.
+- Native platform bridge or Android security checks.
+- Production enforcement.
 
-## API surface
+## Documentation
 
-```text
-Kryvon.initialize(policy, logLevel)
-Kryvon.registerGuard(guard)
-Kryvon.runChecks()
+- `KRYVON.md` — product and engineering specification.
+- `docs/WHY_KRYVON.md` — problem and purpose.
+- `docs/DOMAIN_MODEL.md` — domain semantics.
+- `docs/THREAT_MODEL.md` — threat scenarios and security boundaries.
+- `docs/IMPLEMENTATION_CONTRACT.md` — implementation rules.
 
-KryvonPolicy
-ThreatSeverity
-ThreatType
-EnforcementStrategy
-LogLevel
-Guard
-```
+## Development principle
 
-See the source and tests for the complete API behavior.
+Every security feature must answer what was observed, what evidence represents it, how it is interpreted, how it affects risk, which policy controls the consequence, and what happens when the check cannot run.
 
-## Project status
-
-**Active development · v0.3.0 · Android**
-
-The repository currently includes implemented root, debugger, hook, emulator and integrity detection. `insecureStorage` and `networkPinningFailure` are represented as threat types but are not yet implemented.
-
-## Requirements
-
-- Flutter `>=3.3.0`
-- Dart SDK `^3.9.2`
-- Android
-
-## Repository
-
-[Explore the source →](https://github.com/imsuraj024/kryvon)
+Kryvon provides explainable risk signals, not proof that a client process is trustworthy. High-value operations must still rely on server-side authorization and appropriate platform protections.

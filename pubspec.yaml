@@ -1,5 +1,5 @@
 name: kryvon
-description: "Structured mobile security baseline framework for Flutter applications."
+description: "Runtime security assessment and policy engine for Flutter applications."
 version: 0.3.0
 homepage: https://github.com/imsuraj024/kryvon
 
@@ -10,16 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-
-flutter:
-  plugin:
-    platforms:
-      android:
-        package: com.kryvon.runtime
-        pluginClass: KryvonRuntimePlugin
