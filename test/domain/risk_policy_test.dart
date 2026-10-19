@@ -33,6 +33,41 @@ void main() {
       expect(result.uncertainties, hasLength(2));
     });
 
+    test('rejects blank or duplicate assessment IDs', () {
+      expect(
+        () => evaluator.evaluate([assessment(id: '  ')]),
+        throwsArgumentError,
+      );
+      expect(
+        () => evaluator.evaluate([
+          assessment(id: 'same'),
+          assessment(id: ' same '),
+        ]),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects blank threat, reason, and correlation identifiers', () {
+      Assessment build({
+        String id = 'id',
+        String threat = 'threat',
+        String reason = 'reason',
+        String? correlationKey,
+      }) => Assessment(
+        id: id,
+        threat: threat,
+        severity: Severity.low,
+        confidence: Confidence.high,
+        supportingEvidence: const [],
+        reason: reason,
+        correlationKey: correlationKey,
+      );
+
+      expect(() => evaluator.evaluate([build(threat: ' ')]), throwsArgumentError);
+      expect(() => evaluator.evaluate([build(reason: ' ')]), throwsArgumentError);
+      expect(() => evaluator.evaluate([build(correlationKey: ' ')]), throwsArgumentError);
+    });
+
     test('preserves contributors in input order', () {
       final result = evaluator.evaluate([assessment(id: 'a1', severity: Severity.low), assessment(id: 'a2', severity: Severity.high)]);
       expect(result.contributors.map((e) => e.assessmentId), ['a1', 'a2']);
@@ -67,6 +102,26 @@ void main() {
       expect(policy.decide(context: AssessmentContext.accountAccess, risk: risk(RiskLevel.highRisk)), KryvonDecision.restrict);
       expect(policy.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.critical)), KryvonDecision.block);
       expect(policy.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.unknown)), KryvonDecision.monitor);
+    });
+
+    test('rejects blank policy IDs and non-positive versions at engine boundary', () {
+      const engine = KryvonEngine();
+      expect(
+        () => engine.evaluate(
+          context: AssessmentContext.appStartup,
+          assessments: const [],
+          policy: KryvonPolicy(id: '  '),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => engine.evaluate(
+          context: AssessmentContext.appStartup,
+          assessments: const [],
+          policy: KryvonPolicy(version: 0),
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('supports explicit overrides for unknown and elevated risk', () {
