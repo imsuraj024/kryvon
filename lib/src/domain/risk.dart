@@ -3,11 +3,12 @@ import 'kryvon_enums.dart';
 import 'signal_run.dart';
 
 class RiskContributor {
-  const RiskContributor({required this.assessmentId, required this.severity, required this.confidence, required this.reason});
+  const RiskContributor({required this.assessmentId, required this.severity, required this.confidence, required this.reason, this.correlationKey});
   final String assessmentId;
   final Severity severity;
   final Confidence confidence;
   final String reason;
+  final String? correlationKey;
 }
 
 /// Aggregate risk with traceable contributors and explicit uncertainty.
@@ -16,16 +17,39 @@ class RiskAssessment {
   RiskAssessment({required this.level, required List<RiskContributor> contributors, List<String> uncertainties = const <String>[]})
       : contributors = List<RiskContributor>.unmodifiable(contributors),
         uncertainties = List<String>.unmodifiable(uncertainties);
+
   final RiskLevel level;
   final List<RiskContributor> contributors;
   final List<String> uncertainties;
+
+  /// Number of independently identified assessment groups. Correlated
+  /// assessments remain visible in [contributors] but count as one group.
+  int get independentContributorCount {
+    final correlationKeys = <String>{};
+    var uncorrelatedCount = 0;
+    for (final contributor in contributors) {
+      final key = contributor.correlationKey;
+      if (key == null || key.trim().isEmpty) {
+        uncorrelatedCount++;
+      } else {
+        correlationKeys.add(key);
+      }
+    }
+    return uncorrelatedCount + correlationKeys.length;
+  }
 }
 
 class RiskEvaluator {
   const RiskEvaluator();
 
   RiskAssessment evaluate(List<Assessment> assessments, {SignalRun? signalRun}) {
-    final contributors = assessments.map((a) => RiskContributor(assessmentId: a.id, severity: a.severity, confidence: a.confidence, reason: a.reason)).toList(growable: false);
+    final contributors = assessments.map((a) => RiskContributor(
+      assessmentId: a.id,
+      severity: a.severity,
+      confidence: a.confidence,
+      reason: a.reason,
+      correlationKey: a.correlationKey,
+    )).toList(growable: false);
     final uncertainties = <String>[];
     if (signalRun != null) uncertainties.addAll(signalRun.uncertainties);
     for (final assessment in assessments) {
