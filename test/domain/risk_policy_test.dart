@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryvon/kryvon.dart';
 
-Assessment assessment({String id = 'a1', Severity severity = Severity.medium, Confidence confidence = Confidence.high}) {
-  return Assessment(id: id, threat: 'TEST_THREAT', severity: severity, confidence: confidence, supportingEvidence: const [], reason: 'test reason');
-}
+Assessment assessment({String id = 'a1', Severity severity = Severity.medium, Confidence confidence = Confidence.high}) => Assessment(id: id, threat: 'TEST_THREAT', severity: severity, confidence: confidence, supportingEvidence: const [], reason: 'test reason');
 
 void main() {
   group('RiskEvaluator', () {
@@ -31,10 +29,7 @@ void main() {
     });
 
     test('records medium and low confidence as uncertainty', () {
-      final result = evaluator.evaluate([
-        assessment(id: 'low', confidence: Confidence.low),
-        assessment(id: 'medium', confidence: Confidence.medium),
-      ]);
+      final result = evaluator.evaluate([assessment(id: 'low', confidence: Confidence.low), assessment(id: 'medium', confidence: Confidence.medium)]);
       expect(result.uncertainties, hasLength(2));
     });
 
@@ -48,7 +43,6 @@ void main() {
       expect(() => result.contributors.add(const RiskContributor(assessmentId: 'x', severity: Severity.low, confidence: Confidence.high, reason: 'x')), throwsUnsupportedError);
       expect(() => result.uncertainties.add('mutated'), throwsUnsupportedError);
     });
-  });
 
     test('keeps correlated contributors traceable without counting them as independent', () {
       final result = evaluator.evaluate([
