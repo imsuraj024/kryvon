@@ -22,7 +22,7 @@ void main() {
       final result = engine.evaluate(context: AssessmentContext.appStartup, assessments: const [], signalRun: run);
       expect(result.risk.level, RiskLevel.lowRisk);
       expect(result.decision, KryvonDecision.allow);
-      expect(result.uncertainties, isEmpty);
+      expect(result.risk.uncertainties, isEmpty);
     });
 
     test('does not treat failed coverage as safe', () {
