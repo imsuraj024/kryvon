@@ -646,4 +646,6 @@ Before implementing a detector, use these detailed specifications:
 
 The next implementation stage may add registry/orchestration infrastructure and protocol validation tests, but must not add concrete detectors or automatic assessment generation until those interfaces and their failure semantics have tests. In particular, registration must not imply a safe result, timeouts must not become negative observations, and late responses must not overwrite a timed-out pass.
 
+Assessment generation now has a separate explicit-rule contract in [ASSESSMENT_GENERATION_CONTRACT.md](ASSESSMENT_GENERATION_CONTRACT.md). The generic generator may interpret only caller-authored rules with explicit evidence requirements, confidence thresholds, conflict groups, and correlation keys. It does not define concrete threat rules or infer platform facts.
+
 Native implementations remain a separate step after the Dart contracts are validated. No native platform implementation is included by the current contract-only change.
