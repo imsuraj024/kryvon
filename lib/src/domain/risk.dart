@@ -25,13 +25,9 @@ class RiskEvaluator {
   const RiskEvaluator();
 
   RiskAssessment evaluate(List<Assessment> assessments, {SignalRun? signalRun}) {
-    final contributors = assessments
-        .map((a) => RiskContributor(assessmentId: a.id, severity: a.severity, confidence: a.confidence, reason: a.reason))
-        .toList(growable: false);
+    final contributors = assessments.map((a) => RiskContributor(assessmentId: a.id, severity: a.severity, confidence: a.confidence, reason: a.reason)).toList(growable: false);
     final uncertainties = <String>[];
-
     if (signalRun != null) uncertainties.addAll(signalRun.uncertainties);
-
     for (final assessment in assessments) {
       if (assessment.confidence == Confidence.low) {
         uncertainties.add('Assessment "${assessment.id}" has low confidence.');
@@ -46,8 +42,10 @@ class RiskEvaluator {
       }
       if (signalRun == null) {
         uncertainties.add('No assessments or signal coverage were supplied; risk cannot be established.');
+      } else if (signalRun.isComplete && signalRun.outcomes.any((e) => e.status == EvidenceStatus.detected)) {
+        uncertainties.add('Detected signal evidence has not been interpreted by an assessment.');
       } else if (signalRun.isComplete) {
-        uncertainties.add('Signal evidence exists but no assessment interpreted it.');
+        uncertainties.add('Negative outcomes do not have sufficient confidence to establish low risk.');
       }
       return RiskAssessment(level: RiskLevel.unknown, contributors: contributors, uncertainties: uncertainties);
     }
