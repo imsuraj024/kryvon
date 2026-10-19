@@ -92,18 +92,25 @@ class DetectorOrchestrator {
     required Map<String, Object?> configuration,
   }) async {
     final requestId = 'kryvon-${++_nextRequestId}';
+    final evaluation = Future<Evidence>.sync(
+      () => detector.evaluate(
+        DetectorRequest(
+          requestId: requestId,
+          signalId: signalId,
+          context: context,
+          platform: platform,
+          configuration: configuration,
+        ),
+      ),
+    ).then<Evidence>(
+      (evidence) => evidence,
+      // Wrap detector-originated exceptions so a detector throwing its own
+      // TimeoutException is not mistaken for the orchestrator's timeout.
+      onError: (Object _, StackTrace __) => throw _DetectorExecutionFailure(),
+    );
+
     try {
-      final evidence = await detector
-          .evaluate(
-            DetectorRequest(
-              requestId: requestId,
-              signalId: signalId,
-              context: context,
-              platform: platform,
-              configuration: configuration,
-            ),
-          )
-          .timeout(timeout);
+      final evidence = await evaluation.timeout(timeout);
       if (evidence.signal != signalId ||
           evidence.source.trim().isEmpty ||
           evidence.platform.trim().isEmpty ||
@@ -115,6 +122,8 @@ class DetectorOrchestrator {
       return evidence;
     } on TimeoutException {
       return _failed(signalId, platform, 'detector_timeout');
+    } on _DetectorExecutionFailure {
+      return _failed(signalId, platform, 'detector_error');
     } catch (_) {
       return _failed(signalId, platform, 'detector_error');
     }
@@ -156,4 +165,8 @@ Object? _freezeRunValue(Object? value) {
     return Set<Object?>.unmodifiable(value.map(_freezeRunValue));
   }
   return value;
+}
+
+class _DetectorExecutionFailure implements Exception {
+  const _DetectorExecutionFailure();
 }

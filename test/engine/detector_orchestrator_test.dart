@@ -124,6 +124,58 @@ void main() {
       expect(run.outcomes[1].status, EvidenceStatus.notDetected);
     });
 
+    test('does not misclassify a detector-thrown TimeoutException', () async {
+      final registry = DetectorRegistry([
+        FakeDetector(
+          'throws-timeout',
+          ['a'],
+          (_) async => throw TimeoutException('detector-owned timeout'),
+        ),
+      ]);
+
+      final run = await DetectorOrchestrator(registry: registry).run(
+        context: AssessmentContext.appStartup,
+        platform: 'test',
+      );
+
+      expect(run.outcomes.single.status, EvidenceStatus.failed);
+      expect(run.outcomes.single.metadata['errorCode'], 'detector_error');
+    });
+
+    test('a timed-out signal does not block an unrelated signal', () async {
+      final pending = Completer<Evidence>();
+      final registry = DetectorRegistry([
+        FakeDetector('stalled', ['a'], (_) => pending.future),
+        FakeDetector(
+          'healthy',
+          ['b'],
+          (_) async => result(
+            'b',
+            EvidenceStatus.notDetected,
+            confidence: Confidence.high,
+          ),
+        ),
+      ]);
+
+      final run = await DetectorOrchestrator(
+        registry: registry,
+        timeout: const Duration(milliseconds: 10),
+        maxConcurrentSignals: 2,
+      ).run(
+        context: AssessmentContext.appStartup,
+        platform: 'test',
+      );
+
+      expect(run.outcomes.map((e) => e.signal), ['a', 'b']);
+      expect(run.outcomes[0].metadata['errorCode'], 'detector_timeout');
+      expect(run.outcomes[1].status, EvidenceStatus.notDetected);
+      pending.complete(result(
+        'a',
+        EvidenceStatus.notDetected,
+        confidence: Confidence.high,
+      ));
+    });
+
     test('maps timeout to failed and ignores late completion', () async {
       final completer = Completer<Evidence>();
       final registry = DetectorRegistry([FakeDetector('late', ['a'], (_) => completer.future)]);

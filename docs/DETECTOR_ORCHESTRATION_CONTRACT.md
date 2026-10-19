@@ -72,9 +72,9 @@ Dart future timeouts do not cancel the underlying native or Dart operation. A ti
 
 ## 6. Scheduling and determinism
 
-The implementation must document a concurrency limit and per-detector timeout. Parallel execution is allowed, but result ordering must be stable by registry order and then signal ID, not by completion timing. One detector's failure must not prevent unrelated detectors from completing.
+The implementation uses a configurable per-run concurrency limit (default: four in-flight signal evaluations) and a per-signal timeout (default: three seconds). The limit applies independently to each run; overlapping runs can multiply total in-flight work and may require a host-level admission limit. Detector implementations may be called concurrently for different signals and overlapping runs; they must be re-entrant/concurrency-safe or provide their own serialization and request/response correlation. Parallel execution is bounded within each run, and result ordering is stable by registration order then each detector's declared signal order, not completion timing. One detector's failure must not prevent unrelated signals from completing.
 
-The orchestrator must not run duplicate instances of the same detector for the same signal in one pass. Re-entrancy and concurrent assessment requests must use isolated request state and request IDs.
+The orchestrator must not run duplicate instances of the same detector for the same signal in one pass. Registry IDs and signal ownership are snapshotted at registration. Request IDs are in-isolate correlation identifiers, not globally unique IDs, secrets, or authentication tokens.
 
 ## 7. Correlation and assessment generation
 
