@@ -43,7 +43,7 @@ if (result.decision == KryvonDecision.block) {
 
 Implemented:
 
-- Evidence and assessment domain models.
+- Evidence and assessment domain models, including explicit correlation keys.
 - Explicit severity-to-risk mapping and confidence uncertainty.
 - Signal coverage contract and failure semantics.
 - Configurable policy decisions.
