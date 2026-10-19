@@ -7,12 +7,14 @@ on:
       - kryvon-rebuild
       - kryvon-orchestration
       - kryvon-core-hardening
+      - kryvon-assessment-rules
   pull_request:
     branches:
       - main
       - kryvon-rebuild
       - kryvon-orchestration
       - kryvon-contracts
+      - kryvon-core-hardening
 
 jobs:
   test:
