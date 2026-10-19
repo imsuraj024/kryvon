@@ -6,3 +6,6 @@ export 'src/domain/policy.dart';
 export 'src/domain/risk.dart';
 export 'src/domain/signal_run.dart';
 export 'src/engine/kryvon_engine.dart';
+
+export 'src/engine/detector.dart';
+export 'src/engine/detector_orchestrator.dart';
