@@ -50,6 +50,18 @@ void main() {
     });
   });
 
+    test('keeps correlated contributors traceable without counting them as independent', () {
+      final result = evaluator.evaluate([
+        Assessment(id: 'a1', threat: 'ROOT_ARTIFACT', severity: Severity.high, confidence: Confidence.high, supportingEvidence: const [], reason: 'root file', correlationKey: 'device-compromise'),
+        Assessment(id: 'a2', threat: 'ROOT_ARTIFACT', severity: Severity.high, confidence: Confidence.high, supportingEvidence: const [], reason: 'root property', correlationKey: 'device-compromise'),
+        assessment(id: 'a3', severity: Severity.medium),
+      ]);
+      expect(result.level, RiskLevel.highRisk);
+      expect(result.contributors, hasLength(3));
+      expect(result.independentContributorCount, 2);
+    });
+  });
+
   group('KryvonPolicy', () {
     const policy = KryvonPolicy();
     RiskAssessment risk(RiskLevel level) => RiskAssessment(level: level, contributors: const []);
