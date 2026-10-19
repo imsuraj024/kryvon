@@ -604,3 +604,21 @@ LET THE APPLICATION RESPOND
 ```
 
 This is the domain foundation on which the rebuilt Kryvon should be implemented.
+
+
+## 23. Executable Signal Coverage Contract
+
+The current core exposes `SignalRun` as a coverage snapshot for one assessment pass. It is not a detector registry and does not execute platform checks.
+
+A run is complete only when:
+
+- The expected signal identifiers are non-empty and unique.
+- Every expected signal has exactly one outcome.
+- No unexpected outcome exists.
+- Every outcome is `DETECTED` or `NOT_DETECTED` and has a confidence value.
+
+A run establishes low risk only when every expected signal has exactly one `NOT_DETECTED` outcome with `HIGH` confidence. A missing, duplicate, unexpected, failed, unsupported, unknown, or insufficient-confidence outcome prevents a clean result from being inferred.
+
+Detected evidence without an assessment remains `UNKNOWN`; the engine must not invent an interpretation. If valid high-risk assessments already exist, failed or unsupported checks add uncertainty but must not erase the assessed risk.
+
+These rules intentionally make incomplete coverage visible. They do not claim that a complete set of client-side checks proves the device or process is trustworthy.
