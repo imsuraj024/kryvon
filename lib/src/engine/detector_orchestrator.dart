@@ -48,7 +48,7 @@ class DetectorOrchestrator {
     required String platform,
     required Map<String, Object?> configuration,
   }) async {
-    final requestId = 'kryvon-\${++_nextRequestId}';
+    final requestId = 'kryvon-${++_nextRequestId}';
     final now = DateTime.now().toUtc();
     try {
       final evidence = await detector
