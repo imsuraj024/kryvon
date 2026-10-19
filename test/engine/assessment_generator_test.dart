@@ -147,6 +147,22 @@ void main() {
       );
     });
 
+    test('unexpected evidence cannot satisfy a rule requirement', () {
+      final result = AssessmentGenerator(rules: [rule()]).generate(
+        run(['a'], [evidence('unexpected', EvidenceStatus.detected)]),
+      );
+
+      expect(result.assessments, isEmpty);
+      expect(
+        result.diagnostics.any((d) => d.code == AssessmentGenerationIssueCode.unexpectedEvidence),
+        isTrue,
+      );
+      expect(
+        result.diagnostics.any((d) => d.ruleId == 'rule-a' && d.code == AssessmentGenerationIssueCode.missingEvidence),
+        isTrue,
+      );
+    });
+
     test('duplicate evidence is never resolved by selecting the first item', () {
       final result = AssessmentGenerator(rules: [rule()]).generate(
         run(['a'], [
