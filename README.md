@@ -1,73 +1,66 @@
 # Kryvon
 
-Kryvon is a runtime security assessment and policy engine for Flutter applications.
-
-The `kryvon-rebuild` branch is being rebuilt from first principles. The deterministic core is implemented without platform detectors or native integrations.
+Kryvon is a runtime security assessment and policy engine for Flutter applications. It separates local observations, threat interpretation, risk evaluation, and host-owned decisions.
 
 ## Core model
 
 ```text
-Expected signals + outcomes → Assessment → Risk → Policy → Decision → Host application
+Signal → Evidence → Assessment → Risk → Policy → Decision → Host application
 ```
 
-Kryvon separates observations from interpretation and application decisions. The core engine accepts caller-supplied assessments and an optional `SignalRun` describing expected signal coverage. It does not execute detectors or enforce the returned decision.
+Kryvon does not provide remote attestation and does not make a compromised client trustworthy. Sensitive backend operations must retain server-side authorization.
+
+## Current implementation
+
+- Domain models for evidence, assessment, risk, policy, decision and signal coverage.
+- Detector registry and concurrency-limited orchestration with timeout/failure semantics.
+- Explicit assessment generation rules with confidence thresholds and conflict handling.
+- Android plugin and versioned MethodChannel `dev.kryvon/security.v1`.
+- Initial Android signals:
+  - `android.root.su_binary_present`: checks a fixed list of known paths for an executable `su` candidate.
+  - `android.debugger.attached`: observes `Debug.isDebuggerConnected()`.
+- Dart response validation and deterministic fixtures for positive, negative, conflicting, failed, unsupported, malformed and timeout cases.
+- Flutter CI plus Android example build and Kotlin unit-test coverage.
+
+The root executable signal is only an indicator. A fully checked absence of known paths is not proof that a device is unrooted. If a path check fails and no candidate was found, the result is `FAILED`, never `NOT_DETECTED`. A positive candidate remains `DETECTED` if other paths fail, with partial-failure counts in sanitized metadata.
 
 ## Example
+
+Register the Android detector with the existing orchestrator:
 
 ```dart
 import 'package:kryvon/kryvon.dart';
 
-const engine = KryvonEngine();
-final result = engine.evaluate(
+final detector = AndroidPlatformDetector();
+final registry = DetectorRegistry([detector]);
+final signalRun = await DetectorOrchestrator(registry: registry).run(
   context: AssessmentContext.transaction,
-  assessments: assessments,
-  signalRun: signalRun,
+  platform: 'android',
 );
 
-if (result.decision == KryvonDecision.block) {
-  // The host application owns the response.
-}
+final generated = AssessmentGenerator(
+  rules: firstAndroidThreatRules,
+).generate(signalRun);
 ```
 
-## Core semantics
+This example generates assessments from local evidence only. It does not automatically execute a policy or enforce a decision.
 
-- No assessments and no coverage means `unknown` risk, not a detected threat.
-- Risk follows the highest assessed severity; confidence is surfaced as uncertainty and does not silently downgrade severity.
-- Missing, failed, unknown, unsupported, duplicate, or unexpected signal outcomes are explicit coverage gaps.
-- A low-risk result from negative signal outcomes requires every expected signal to have exactly one outcome and every negative outcome to have high confidence.
-- Detected signal evidence without an interpreting assessment remains `unknown`; the engine does not invent a threat conclusion.
-- Policy maps risk and context to a configurable decision.
-- Evidence metadata, supporting evidence, signal outcomes, contributors, and uncertainty collections are read-only snapshots.
+## Security boundaries
 
-## Current state
-
-Implemented:
-
-- Evidence and assessment domain models, including explicit correlation keys.
-- Explicit severity-to-risk mapping and confidence uncertainty.
-- Signal coverage contract and failure semantics.
-- Configurable policy decisions.
-- Deterministic assessment-to-decision engine.
-- Domain and engine unit tests.
-- GitHub Actions workflow for `flutter analyze` and `flutter test`.
-
-Not yet implemented:
-
-- Assessment generation and signal correlation/deduplication.
-- Runtime detectors or detector orchestration.
-- Native platform bridge or Android security checks.
-- Production enforcement.
+- `DETECTED`, `NOT_DETECTED`, `UNKNOWN`, `FAILED`, and `UNSUPPORTED` remain distinct.
+- Confidence describes observation certainty, not threat severity.
+- Missing, duplicate, unexpected, failed or unsupported evidence must not be interpreted as safe.
+- The native channel validates protocol version and request identity; the Dart adapter rejects malformed or mismatched responses.
+- Local checks can be bypassed or patched in a compromised process.
+- Debugger detection is time-sensitive and may be expected in development/QA.
+- The host application owns enforcement; high-value operations require server-side authorization.
 
 ## Documentation
 
-- `KRYVON.md` — product and engineering specification.
-- `docs/WHY_KRYVON.md` — problem and purpose.
-- `docs/DOMAIN_MODEL.md` — domain semantics.
-- `docs/THREAT_MODEL.md` — threat scenarios and security boundaries.
-- `docs/IMPLEMENTATION_CONTRACT.md` — implementation rules.
-
-## Development principle
-
-Every security feature must answer what was observed, what evidence represents it, how it is interpreted, how it affects risk, which policy controls the consequence, and what happens when the check cannot run.
-
-Kryvon provides explainable risk signals, not proof that a client process is trustworthy. High-value operations must still rely on server-side authorization and appropriate platform protections.
+- [Domain model](docs/DOMAIN_MODEL.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Implementation contract](docs/IMPLEMENTATION_CONTRACT.md)
+- [Detector orchestration contract](docs/DETECTOR_ORCHESTRATION_CONTRACT.md)
+- [Native platform contract](docs/NATIVE_PLATFORM_CONTRACT.md)
+- [Assessment generation contract](docs/ASSESSMENT_GENERATION_CONTRACT.md)
+- [First Android threat rules](docs/FIRST_ANDROID_THREAT_RULES.md)
