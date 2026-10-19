@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - kryvon-rebuild
+      - kryvon-orchestration
   pull_request:
     branches:
       - main
       - kryvon-rebuild
+      - kryvon-orchestration
 
 jobs:
   test:
