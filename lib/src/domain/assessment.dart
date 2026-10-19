@@ -1,15 +1,16 @@
 import 'evidence.dart';
 import 'kryvon_enums.dart';
 
+/// An interpretation of evidence, expressed independently of enforcement.
 class Assessment {
-  const Assessment({
+  Assessment({
     required this.id,
     required this.threat,
     required this.severity,
     required this.confidence,
-    required this.supportingEvidence,
+    required List<Evidence> supportingEvidence,
     required this.reason,
-  });
+  }) : supportingEvidence = List<Evidence>.unmodifiable(supportingEvidence);
 
   final String id;
   final String threat;
