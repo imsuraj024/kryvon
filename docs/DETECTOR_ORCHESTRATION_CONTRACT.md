@@ -68,7 +68,7 @@ A detector that declares several signals must return one outcome for each declar
 - A transient channel error, malformed response, or unexpected native exception maps to `FAILED`.
 - The orchestration layer must not catch an error and replace it with `NOT_DETECTED`.
 
-Dart future timeouts do not necessarily cancel the underlying native or Dart operation. A timed-out result must be ignored if it arrives later, and it must not be allowed to overwrite the result of the current pass. Native cancellation is optional and must be separately defined per platform.
+Dart future timeouts do not cancel the underlying native or Dart operation. A timed-out result is ignored when it arrives later; the returned `SignalRun` is immutable evidence of the orchestrator's completed pass and is not updated by late completion. The underlying operation may continue consuming resources, so detectors and native adapters should implement their own cancellation where supported. The timeout bounds asynchronous waiting; it cannot pre-empt synchronous blocking code on the same Dart isolate.
 
 ## 6. Scheduling and determinism
 
