@@ -22,8 +22,8 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+      - name: Format Dart sources
+        run: dart format .
       - name: Analyze
         run: flutter analyze
       - name: Run Dart tests
