@@ -76,11 +76,21 @@ void main() {
     });
 
     test('evidence snapshots metadata', () {
-      final metadata = <String, Object?>{'key': 'before'};
+      final nestedItems = <Object?>['before'];
+      final nested = <String, Object?>{'items': nestedItems};
+      final metadata = <String, Object?>{'key': 'before', 'nested': nested};
       final evidence = Evidence(signal: 'test', status: EvidenceStatus.detected, confidence: Confidence.high, source: 'unit-test', platform: 'test', observedAt: DateTime.utc(2026), metadata: metadata);
       metadata['key'] = 'after';
+      nested['new'] = true;
+      nestedItems.add('after');
       expect(evidence.metadata['key'], 'before');
       expect(() => evidence.metadata['new'] = true, throwsUnsupportedError);
+      final frozenNested = evidence.metadata['nested'] as Map;
+      final frozenItems = frozenNested['items'] as List;
+      expect(frozenNested.containsKey('new'), isFalse);
+      expect(frozenItems, ['before']);
+      expect(() => frozenNested['new'] = true, throwsUnsupportedError);
+      expect(() => frozenItems.add('mutation'), throwsUnsupportedError);
     });
   });
 }
