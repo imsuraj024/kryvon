@@ -622,3 +622,10 @@ A run establishes low risk only when every expected signal has exactly one `NOT_
 Detected evidence without an assessment remains `UNKNOWN`; the engine must not invent an interpretation. If valid high-risk assessments already exist, failed or unsupported checks add uncertainty but must not erase the assessed risk.
 
 These rules intentionally make incomplete coverage visible. They do not claim that a complete set of client-side checks proves the device or process is trustworthy.
+
+
+## 24. Correlation Identity
+
+`Assessment.correlationKey` is an optional, explicit grouping identity for assessments that describe the same underlying condition. The engine does not guess correlation from similar threat names or reasons. All contributors remain visible for auditability, while `RiskAssessment.independentContributorCount` counts each non-empty correlation key once and treats assessments without a key as independent.
+
+This is correlation bookkeeping, not an automatic correlation algorithm. Future assessment generation must assign keys only when supported by domain evidence, and must test that correlated observations do not inflate any future score or threshold logic.
