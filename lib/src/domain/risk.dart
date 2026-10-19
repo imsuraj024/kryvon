@@ -15,12 +15,18 @@ class RiskContributor {
   final String reason;
 }
 
+/// Aggregate risk with traceable contributors and explicit uncertainty.
+///
+/// Confidence is recorded, but does not silently lower severity. Policy can
+/// choose how to respond to a risk level; callers can inspect uncertainty
+/// separately rather than having a severe signal downgraded implicitly.
 class RiskAssessment {
-  const RiskAssessment({
+  RiskAssessment({
     required this.level,
-    required this.contributors,
-    this.uncertainties = const <String>[],
-  });
+    required List<RiskContributor> contributors,
+    List<String> uncertainties = const <String>[],
+  })  : contributors = List<RiskContributor>.unmodifiable(contributors),
+        uncertainties = List<String>.unmodifiable(uncertainties);
 
   final RiskLevel level;
   final List<RiskContributor> contributors;
@@ -32,7 +38,13 @@ class RiskEvaluator {
 
   RiskAssessment evaluate(List<Assessment> assessments) {
     if (assessments.isEmpty) {
-      return const RiskAssessment(level: RiskLevel.unknown, contributors: []);
+      return RiskAssessment(
+        level: RiskLevel.unknown,
+        contributors: const <RiskContributor>[],
+        uncertainties: const <String>[
+          'No assessments are available; risk cannot be established.',
+        ],
+      );
     }
 
     final contributors = assessments
@@ -47,30 +59,34 @@ class RiskEvaluator {
         .toList(growable: false);
 
     var highestSeverity = Severity.info;
-    var hasUncertainty = false;
+    final uncertainties = <String>[];
 
     for (final assessment in assessments) {
       if (assessment.severity.index > highestSeverity.index) {
         highestSeverity = assessment.severity;
       }
       if (assessment.confidence == Confidence.low) {
-        hasUncertainty = true;
+        uncertainties.add(
+          'Assessment "${assessment.id}" has low confidence.',
+        );
+      } else if (assessment.confidence == Confidence.medium) {
+        uncertainties.add(
+          'Assessment "${assessment.id}" has medium confidence.',
+        );
       }
     }
 
     final level = switch (highestSeverity) {
       Severity.info || Severity.low => RiskLevel.lowRisk,
       Severity.medium => RiskLevel.elevated,
-      Severity.high => hasUncertainty ? RiskLevel.elevated : RiskLevel.highRisk,
+      Severity.high => RiskLevel.highRisk,
       Severity.critical => RiskLevel.critical,
     };
 
     return RiskAssessment(
       level: level,
       contributors: contributors,
-      uncertainties: hasUncertainty
-          ? const <String>['One or more assessments have low confidence.']
-          : const <String>[],
+      uncertainties: uncertainties,
     );
   }
 }
