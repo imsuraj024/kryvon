@@ -6,11 +6,13 @@ on:
       - main
       - kryvon-rebuild
       - kryvon-orchestration
+      - kryvon-core-hardening
   pull_request:
     branches:
       - main
       - kryvon-rebuild
       - kryvon-orchestration
+      - kryvon-contracts
 
 jobs:
   test:
