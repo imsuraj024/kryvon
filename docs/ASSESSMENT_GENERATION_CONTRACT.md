@@ -34,7 +34,7 @@ A rule matches only when every requirement:
 
 Missing or duplicate outcomes, unexpected signals, inconclusive statuses, and insufficient confidence produce diagnostics and do not match the affected rule. The generator never picks the first duplicate, fills missing data, or converts failure/unsupported/unknown into a negative result.
 
-A valid opposite status is a normal non-match, not an error. A malformed expected-signal set (empty, blank, or duplicate IDs) invalidates generation for that run. Partial coverage does not suppress a rule that is fully and validly supported by its own requirements; uncertainty in unrelated signals remains visible in diagnostics.
+A valid opposite status is a normal non-match, not an error. A malformed expected-signal set (empty, blank, whitespace-padded, or duplicate IDs, including duplicates after trimming) invalidates generation for that run. Partial coverage does not suppress a rule that is fully and validly supported by its own requirements; uncertainty in unrelated signals remains visible in diagnostics.
 
 ## 4. Assessment confidence
 
