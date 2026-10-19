@@ -18,13 +18,26 @@ class KryvonEngine {
     SignalRun? signalRun,
     KryvonPolicy policy = const KryvonPolicy(),
   }) {
+    policy.validate();
     final risk = riskEvaluator.evaluate(assessments, signalRun: signalRun);
     final decision = policy.decide(context: context, risk: risk);
     final reason = _explain(decision: decision, context: context, risk: risk, policy: policy);
-    return KryvonDecisionResult(decision: decision, context: context, risk: risk, reason: reason, policyId: policy.id, policyVersion: policy.version);
+    return KryvonDecisionResult(
+      decision: decision,
+      context: context,
+      risk: risk,
+      reason: reason,
+      policyId: policy.id,
+      policyVersion: policy.version,
+    );
   }
 
-  String _explain({required KryvonDecision decision, required AssessmentContext context, required RiskAssessment risk, required KryvonPolicy policy}) {
+  String _explain({
+    required KryvonDecision decision,
+    required AssessmentContext context,
+    required RiskAssessment risk,
+    required KryvonPolicy policy,
+  }) {
     final base = 'Policy "${policy.id}" v${policy.version} selected '
         '${decision.name} for ${risk.level.name} risk in ${context.name} context.';
     if (risk.level == RiskLevel.unknown) {
