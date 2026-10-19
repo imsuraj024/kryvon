@@ -1,15 +1,19 @@
 import 'kryvon_enums.dart';
 
+/// A single observation made by a signal source.
+///
+/// [confidence] may be null when the source cannot provide a meaningful
+/// confidence estimate (for example, when the observation failed).
 class Evidence {
-  const Evidence({
+  Evidence({
     required this.signal,
     required this.status,
     required this.confidence,
     required this.source,
     required this.platform,
     required this.observedAt,
-    this.metadata = const <String, Object?>{},
-  });
+    Map<String, Object?> metadata = const <String, Object?>{},
+  }) : metadata = Map<String, Object?>.unmodifiable(metadata);
 
   final String signal;
   final EvidenceStatus status;
@@ -17,5 +21,7 @@ class Evidence {
   final String source;
   final String platform;
   final DateTime observedAt;
+
+  /// Diagnostic metadata. Callers cannot mutate the map after construction.
   final Map<String, Object?> metadata;
 }
