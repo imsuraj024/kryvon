@@ -13,7 +13,8 @@ class SignalRun {
 
   bool get hasUniqueExpectedSignals => expectedSignals.isNotEmpty &&
       expectedSignals.every((signal) => signal.trim().isNotEmpty) &&
-      expectedSignals.toSet().length == expectedSignals.length;
+      expectedSignals.map((signal) => signal.trim()).toSet().length ==
+          expectedSignals.length;
 
   bool get isComplete {
     if (!hasUniqueExpectedSignals) return false;
