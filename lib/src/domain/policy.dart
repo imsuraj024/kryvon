@@ -1,12 +1,16 @@
 import 'kryvon_enums.dart';
 import 'risk.dart';
 
+/// Maps an evaluated risk level to a host-application decision.
+/// Defaults are conservative for critical risk and configurable for unknowns.
 class KryvonPolicy {
   const KryvonPolicy({
     this.id = 'default',
     this.version = 1,
     this.highRiskDecision = KryvonDecision.restrict,
     this.criticalRiskDecision = KryvonDecision.block,
+    this.elevatedRiskDecision = KryvonDecision.monitor,
+    this.elevatedTransactionDecision = KryvonDecision.restrict,
     this.unknownDecision = KryvonDecision.monitor,
   });
 
@@ -14,12 +18,11 @@ class KryvonPolicy {
   final int version;
   final KryvonDecision highRiskDecision;
   final KryvonDecision criticalRiskDecision;
+  final KryvonDecision elevatedRiskDecision;
+  final KryvonDecision elevatedTransactionDecision;
   final KryvonDecision unknownDecision;
 
-  KryvonDecision decide({
-    required AssessmentContext context,
-    required RiskAssessment risk,
-  }) {
+  KryvonDecision decide({required AssessmentContext context, required RiskAssessment risk}) {
     switch (risk.level) {
       case RiskLevel.unknown:
         return unknownDecision;
@@ -29,8 +32,8 @@ class KryvonPolicy {
         return highRiskDecision;
       case RiskLevel.elevated:
         return context == AssessmentContext.transaction
-            ? KryvonDecision.restrict
-            : KryvonDecision.monitor;
+            ? elevatedTransactionDecision
+            : elevatedRiskDecision;
       case RiskLevel.lowRisk:
         return KryvonDecision.allow;
     }
