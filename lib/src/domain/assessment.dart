@@ -10,6 +10,7 @@ class Assessment {
     required this.confidence,
     required List<Evidence> supportingEvidence,
     required this.reason,
+    this.correlationKey,
   }) : supportingEvidence = List<Evidence>.unmodifiable(supportingEvidence);
 
   final String id;
@@ -18,4 +19,8 @@ class Assessment {
   final Confidence confidence;
   final List<Evidence> supportingEvidence;
   final String reason;
+
+  /// Stable identifier for assessments that describe the same underlying
+  /// condition. Null means the engine must not assume correlation.
+  final String? correlationKey;
 }
