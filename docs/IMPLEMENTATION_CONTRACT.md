@@ -622,3 +622,14 @@ The implementation contract is considered satisfied when:
 - The public API does not expose unnecessary implementation details.
 
 This contract is the baseline for the Kryvon rebuild.
+
+
+# 20. Implemented Core Coverage Semantics
+
+The current `SignalRun` type records the expected signal identifiers and the outcomes supplied by a future collector. It does not register or invoke detectors.
+
+A coverage pass is complete only when the expected identifiers are non-empty and unique, each expected signal has exactly one outcome, no unexpected outcome exists, and every outcome is `DETECTED` or `NOT_DETECTED` with an explicit confidence value.
+
+The core may infer `LOW_RISK` from a run with no assessments only when every expected signal returned `NOT_DETECTED` with `HIGH` confidence. Otherwise, missing or uncertain coverage remains `UNKNOWN`. Detected evidence without an assessment remains unknown until interpreted. Failed or unsupported checks must be preserved as uncertainty and must not erase independently assessed high risk.
+
+`RiskEvaluator` currently maps the highest assessment severity to a risk level and reports low/medium assessment confidence as uncertainty. It does not yet correlate or deduplicate related assessments. Correlation is a separate prerequisite before detector implementation, not something detectors should each implement independently.
