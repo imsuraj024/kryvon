@@ -80,13 +80,13 @@ This example generates assessments and evaluates risk. It does not automatically
 
 ## Documentation
 
-- [Domain model](docs/DOMAIN_MODEL.md)
-- [Threat model](docs/THREAT_MODEL.md)
-- [Implementation contract](docs/IMPLEMENTATION_CONTRACT.md)
-- [Detector orchestration contract](docs/DETECTOR_ORCHESTRATION_CONTRACT.md)
-- [Native platform contract](docs/NATIVE_PLATFORM_CONTRACT.md)
-- [Assessment generation contract](docs/ASSESSMENT_GENERATION_CONTRACT.md)
-- [First Android threat rules](docs/FIRST_ANDROID_THREAT_RULES.md)
+- [Domain model](doc/DOMAIN_MODEL.md)
+- [Threat model](doc/THREAT_MODEL.md)
+- [Implementation contract](doc/IMPLEMENTATION_CONTRACT.md)
+- [Detector orchestration contract](doc/DETECTOR_ORCHESTRATION_CONTRACT.md)
+- [Native platform contract](doc/NATIVE_PLATFORM_CONTRACT.md)
+- [Assessment generation contract](doc/ASSESSMENT_GENERATION_CONTRACT.md)
+- [First Android threat rules](doc/FIRST_ANDROID_THREAT_RULES.md)
 
 ## Compatibility and testing
 
