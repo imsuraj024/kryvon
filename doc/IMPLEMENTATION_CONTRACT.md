@@ -387,6 +387,8 @@ The default policy must be documented and safe for the intended use case.
 
 # 9. Public API Contract
 
+This section records the original design intent. The conceptual snippet below is illustrative, not a guarantee of the exact 0.4.0 API. For the released public API and supported usage, follow the current [README](../README.md) and generated API reference.
+
 The public API should expose high-level security operations rather than detector implementation details.
 
 Conceptual usage:
@@ -580,9 +582,9 @@ Explicit non-goals:
 
 ---
 
-# 18. Implementation Order
+# 18. Original Implementation Order (Historical)
 
-The implementation must follow this order:
+The sequence below records the original implementation plan; it is not a statement that all listed work remains outstanding. Kryvon 0.4.0 includes the Dart domain/orchestration layers and an initial Android adapter with root-path and debugger-attachment signals. The current supported implementation is described in the [README](../README.md).
 
 ```text
 1. Domain primitives
@@ -637,9 +639,9 @@ The core may infer `LOW_RISK` from a run with no assessments only when every exp
 
 # 21. Detector and Native Contract Gate
 
-The domain and risk core now has a successful Flutter CI run covering dependency resolution, static analysis, and tests. Assessment identifiers and policy identity/version are validated at the evaluation boundary. Correlation grouping is explicit and tested; no inference from shared threat names or similar descriptions is permitted.
+The domain and risk core has a successful Flutter CI run covering dependency resolution, static analysis, and tests. Assessment identifiers and policy identity/version are validated at the evaluation boundary. Correlation grouping is explicit and tested; no inference from shared threat names or similar descriptions is permitted.
 
-Before implementing a detector, use these detailed specifications:
+For any new detector or platform signal, use these specifications:
 
 - [Detector orchestration contract](DETECTOR_ORCHESTRATION_CONTRACT.md)
 - [Native platform contract](NATIVE_PLATFORM_CONTRACT.md)
@@ -648,4 +650,4 @@ The registry/orchestration layer and generic explicit-rule generator are now imp
 
 Assessment generation now has a separate explicit-rule contract in [ASSESSMENT_GENERATION_CONTRACT.md](ASSESSMENT_GENERATION_CONTRACT.md). The generic generator may interpret only caller-authored rules with explicit evidence requirements, confidence thresholds, conflict groups, and correlation keys. It does not define concrete threat rules or infer platform facts.
 
-Native implementations remain a separate step after the Dart contracts are validated. No native platform implementation is included by the current contract-only change.
+The statements above describe the earlier contract-only phase and are historical, not the 0.4.0 release state. Version 0.4.0 includes an Android native implementation for the documented `su`-path candidate check and debugger-attachment signal. It does not include a broad detector catalog, remote attestation, or a guarantee of tamper-proof local results. Add further native signals only after their semantics, platform coverage, confidence threshold, severity rationale, and test fixtures are specified.
