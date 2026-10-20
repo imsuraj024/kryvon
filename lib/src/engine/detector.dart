@@ -43,8 +43,8 @@ class DetectorRegistration {
 
 class DetectorRegistry {
   DetectorRegistry(List<SignalDetector> detectors)
-      : registrations = _validateAndSnapshot(detectors),
-        detectors = List<SignalDetector>.unmodifiable(detectors);
+    : registrations = _validateAndSnapshot(detectors),
+      detectors = List<SignalDetector>.unmodifiable(detectors);
 
   /// Validated registrations in deterministic execution order.
   final List<DetectorRegistration> registrations;
@@ -53,8 +53,8 @@ class DetectorRegistry {
   final List<SignalDetector> detectors;
 
   List<String> get expectedSignals => List<String>.unmodifiable(
-        registrations.expand((registration) => registration.signalIds),
-      );
+    registrations.expand((registration) => registration.signalIds),
+  );
 
   SignalDetector? ownerOf(String signalId) {
     final normalized = signalId.trim();
@@ -130,11 +130,7 @@ class DetectorRegistry {
       }
 
       registrations.add(
-        DetectorRegistration(
-          detector: detector,
-          id: id,
-          signalIds: signalIds,
-        ),
+        DetectorRegistration(detector: detector, id: id, signalIds: signalIds),
       );
     }
 
@@ -144,7 +140,9 @@ class DetectorRegistry {
 
 Map<String, Object?> _freezeConfiguration(Map<String, Object?> values) =>
     Map<String, Object?>.unmodifiable(
-      values.map((key, value) => MapEntry(key, _freezeConfigurationValue(value))),
+      values.map(
+        (key, value) => MapEntry(key, _freezeConfigurationValue(value)),
+      ),
     );
 
 Object? _freezeConfigurationValue(Object? value) {

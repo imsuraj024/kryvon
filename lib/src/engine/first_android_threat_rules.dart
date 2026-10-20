@@ -21,7 +21,8 @@ final List<AssessmentRule> firstAndroidThreatRules = List.unmodifiable([
     id: 'android.debugger-attached.v1',
     threat: 'ANDROID_DEBUGGER_ATTACHED',
     severity: Severity.medium,
-    reason: 'The Android platform API reported a debugger attached at observation time.',
+    reason:
+        'The Android platform API reported a debugger attached at observation time.',
     requirements: [
       EvidenceRequirement(
         signalId: 'android.debugger.attached',

@@ -1,94 +1,56 @@
 # Changelog
 
-All notable changes to Kryvon will be documented in this file.
+All notable changes to Kryvon are documented here. This project follows
+[Semantic Versioning](https://semver.org/).
 
-The format is based on Keep a Changelog
-and the project follows Semantic Versioning.
+## 0.4.0
 
----
+### Breaking changes
 
-## [0.3.0] - 2026-03-19
-
-### Added
-
-- **HookGuard** for detecting Frida, Xposed, and Substrate instrumentation frameworks.
-- **EmulatorGuard** for detecting Android emulator environments (QEMU, Genymotion, generic fingerprints).
-- **IntegrityGuard** for APK signing certificate verification via SHA-256.
-- Per-type enforcement strategies (`blockApp`, `restrictFeatures`) via `KryvonPolicy.strategyForType`.
-- Nonce-based `MethodChannel` response validation via `SecureRuntimeBridge`.
-
-### Security
-
-The new guards defend against runtime instrumentation, emulator-based analysis, and repackaged APK distribution. Hook and integrity violations trigger immediate `blockApp` enforcement, bypassing the risk aggregator. This completes Kryvon's runtime integrity baseline alongside **RootGuard** and **DebuggerGuard**.
-
-### Internal
-
-- Risk scoring switched to per-type flat weights.
-- MethodChannel name XOR-obfuscated at source level.
-- All five guards auto-register in `Kryvon.initialize()`.
-
----
-
-## [0.2.0] - 2026-03-06
+- Replaced the legacy guard-oriented API with an evidence, assessment, risk,
+  policy, and decision model. Existing integrations using `Kryvon.initialize()`,
+  `Kryvon.runChecks()`, `HookGuard`, `EmulatorGuard`, `IntegrityGuard`,
+  or the previous enforcement strategies must migrate to the exported API
+  documented in the README and API reference.
 
 ### Added
 
-- **DebuggerGuard** for detecting debugging environments.
-- Multi-signal debugger detection on Android:
-  - Android debugger connection detection (`Debug.isDebuggerConnected`)
-  - Native tracing detection via `TracerPid` (`/proc/self/status`)
-  - JDWP debugging detection
-  - Detection of debuggable application builds (`FLAG_DEBUGGABLE`)
-  - Detection of system debug builds (`ro.debuggable`)
-- Integration of `DebuggerGuard` with Kryvon's guard framework.
-- Structured `ThreatEvent` emission for debugger-related threats.
-- Severity scoring for debugger indicators.
-- Compatibility with Kryvon's runtime **Risk Aggregator**.
+- Immutable evidence and assessment snapshots with explicit confidence.
+- Detector registry and concurrency-limited orchestration with timeout and
+  failure handling.
+- Rule-based assessment generation with confidence requirements and conflict
+  reporting.
+- Risk evaluation that preserves uncertainty and correlated contributors.
+- Versioned Android MethodChannel adapter for root `su` path and debugger
+  attachment signals.
+- Native Android unit tests, Dart tests, and an Android example build in CI.
 
-### Security
+### Security notes
 
-DebuggerGuard helps detect environments where attackers may attempt:
+- A missing or failed signal is not proof of a safe device.
+- Root-path checks are indicators only and cannot prove a device is unrooted.
+- Debugger attachment is time-sensitive and may be expected during development.
+- Kryvon performs local checks, not remote attestation. Keep authorization for
+  sensitive operations on the server.
 
-- runtime inspection
-- code stepping
-- variable inspection
-- reverse engineering during execution
+## Earlier versions
 
-This significantly strengthens Kryvon's runtime integrity detection and complements existing **RootGuard** protections.
+The following entries describe the earlier guard-oriented implementation and
+are retained as historical release notes. They do not describe the current
+0.4.0 API.
 
-### Internal
+### 0.3.0 - 2026-03-19
 
-- Improved guard modularity to support additional runtime detection modules.
-- Enhanced logging for debugger-related threat events.
+- Earlier guard-oriented API and runtime integrity work.
 
----
+### 0.2.0 - 2026-03-06
 
-## [0.1.0] - 2026-03-05
+- Earlier debugger detection and guard framework.
 
-### Added
+### 0.1.0 - 2026-03-05
 
-- Initial public release of Kryvon mobile security baseline framework.
-- Guard-based architecture for modular security checks.
-- **RootGuard** for detecting rooted Android devices.
-- Multi-indicator root detection including:
-  - `su` binary presence
-  - `su` execution capability
-  - writable system partitions
-  - known root management applications
-  - insecure system properties
-- Runtime **Risk Aggregator** for evaluating device compromise severity.
-- Policy-driven enforcement strategies.
-- Structured logging system.
-- Example Flutter application demonstrating Kryvon integration.
+- Initial guard-oriented Android security framework.
 
----
+### 0.0.1 - 2026-03-04
 
-## [0.0.1] - 2026-03-04
-
-* Initial release — Android only
-* Policy-based threat detection framework (`Kryvon.initialize` + `Kryvon.runChecks`)
-* Root detection with 6 native indicators: `suBinary`, `suExecution`, `dangerousProps`, `writableSystem`, `knownRootApp`, `testKeys`
-* Severity levels: `low` → `medium` → `high` → `critical`
-* Enforcement strategies: `emitOnly`, `terminateApp`
-* Built-in `KryvonPolicy.fintech()` preset
-* Structured logger with configurable log level
+- Initial Android-only development release.

@@ -13,8 +13,10 @@ class Evidence {
     required this.observedAt,
     Map<String, Object?> metadata = const <String, Object?>{},
   }) : metadata = Map<String, Object?>.unmodifiable(
-          metadata.map((key, value) => MapEntry(key, _freezeMetadataValue(value))),
-        );
+         metadata.map(
+           (key, value) => MapEntry(key, _freezeMetadataValue(value)),
+         ),
+       );
 
   final String signal;
   final EvidenceStatus status;

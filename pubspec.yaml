@@ -1,11 +1,17 @@
 name: kryvon
-description: "Runtime security assessment and policy engine for Flutter applications."
-version: 0.3.0
+description: "Runtime security assessment and policy engine for Flutter apps with Android signal detection."
+version: 0.4.0
 homepage: https://github.com/imsuraj024/kryvon
+repository: https://github.com/imsuraj024/kryvon
+issue_tracker: https://github.com/imsuraj024/kryvon/issues
+topics:
+  - security
+  - security-tools
+  - flutter-plugin
 
 environment:
   sdk: ^3.9.2
-  flutter: '>=3.3.0'
+  flutter: '>=3.35.7'
 
 dependencies:
   flutter:

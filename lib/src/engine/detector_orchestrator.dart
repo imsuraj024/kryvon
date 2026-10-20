@@ -42,8 +42,9 @@ class DetectorOrchestrator {
   }) async {
     // Snapshot run configuration before starting concurrent work.
     final configSnapshot = _freezeRunConfiguration(configuration);
-    final normalizedPlatform =
-        platform.trim().isEmpty ? 'unknown' : platform.trim();
+    final normalizedPlatform = platform.trim().isEmpty
+        ? 'unknown'
+        : platform.trim();
     final expected = registry.expectedSignals;
     final tasks = <_DetectorTask>[
       for (final registration in registry.registrations)
@@ -92,22 +93,24 @@ class DetectorOrchestrator {
     required Map<String, Object?> configuration,
   }) async {
     final requestId = 'kryvon-${++_nextRequestId}';
-    final evaluation = Future<Evidence>.sync(
-      () => detector.evaluate(
-        DetectorRequest(
-          requestId: requestId,
-          signalId: signalId,
-          context: context,
-          platform: platform,
-          configuration: configuration,
-        ),
-      ),
-    ).then<Evidence>(
-      (evidence) => evidence,
-      // Wrap detector-originated exceptions so a detector throwing its own
-      // TimeoutException is not mistaken for the orchestrator's timeout.
-      onError: (Object _, StackTrace __) => throw _DetectorExecutionFailure(),
-    );
+    final evaluation =
+        Future<Evidence>.sync(
+          () => detector.evaluate(
+            DetectorRequest(
+              requestId: requestId,
+              signalId: signalId,
+              context: context,
+              platform: platform,
+              configuration: configuration,
+            ),
+          ),
+        ).then<Evidence>(
+          (evidence) => evidence,
+          // Wrap detector-originated exceptions so a detector throwing its own
+          // TimeoutException is not mistaken for the orchestrator's timeout.
+          onError: (Object _, StackTrace __) =>
+              throw _DetectorExecutionFailure(),
+        );
 
     try {
       final evidence = await evaluation.timeout(timeout);
@@ -130,14 +133,14 @@ class DetectorOrchestrator {
   }
 
   Evidence _failed(String signalId, String platform, String code) => Evidence(
-        signal: signalId,
-        status: EvidenceStatus.failed,
-        confidence: null,
-        source: 'kryvon.orchestrator',
-        platform: platform,
-        observedAt: DateTime.now().toUtc(),
-        metadata: <String, Object?>{'errorCode': code},
-      );
+    signal: signalId,
+    status: EvidenceStatus.failed,
+    confidence: null,
+    source: 'kryvon.orchestrator',
+    platform: platform,
+    observedAt: DateTime.now().toUtc(),
+    metadata: <String, Object?>{'errorCode': code},
+  );
 }
 
 class _DetectorTask {

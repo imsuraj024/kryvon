@@ -21,7 +21,12 @@ class KryvonEngine {
     policy.validate();
     final risk = riskEvaluator.evaluate(assessments, signalRun: signalRun);
     final decision = policy.decide(context: context, risk: risk);
-    final reason = _explain(decision: decision, context: context, risk: risk, policy: policy);
+    final reason = _explain(
+      decision: decision,
+      context: context,
+      risk: risk,
+      policy: policy,
+    );
     return KryvonDecisionResult(
       decision: decision,
       context: context,
@@ -38,7 +43,8 @@ class KryvonEngine {
     required RiskAssessment risk,
     required KryvonPolicy policy,
   }) {
-    final base = 'Policy "${policy.id}" v${policy.version} selected '
+    final base =
+        'Policy "${policy.id}" v${policy.version} selected '
         '${decision.name} for ${risk.level.name} risk in ${context.name} context.';
     if (risk.level == RiskLevel.unknown) {
       return '$base Risk could not be established; missing, failed, unsupported, or uninterpreted signals are uncertainty, not a detected threat.';

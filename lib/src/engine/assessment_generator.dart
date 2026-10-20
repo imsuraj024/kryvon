@@ -11,7 +11,11 @@ class EvidenceRequirement {
     this.minimumConfidence = Confidence.high,
   }) : signalId = signalId.trim() {
     if (this.signalId.isEmpty) {
-      throw ArgumentError.value(signalId, 'signalId', 'Signal ID must not be blank.');
+      throw ArgumentError.value(
+        signalId,
+        'signalId',
+        'Signal ID must not be blank.',
+      );
     }
     if (expectedStatus != EvidenceStatus.detected &&
         expectedStatus != EvidenceStatus.notDetected) {
@@ -46,17 +50,21 @@ class AssessmentRule {
     required List<EvidenceRequirement> requirements,
     String? correlationKey,
     String? conflictGroup,
-  })  : id = id.trim(),
-        threat = threat.trim(),
-        reason = reason.trim(),
-        correlationKey = _normalizeOptional(correlationKey, 'correlationKey'),
-        conflictGroup = _normalizeOptional(conflictGroup, 'conflictGroup'),
-        requirements = List<EvidenceRequirement>.unmodifiable(requirements) {
+  }) : id = id.trim(),
+       threat = threat.trim(),
+       reason = reason.trim(),
+       correlationKey = _normalizeOptional(correlationKey, 'correlationKey'),
+       conflictGroup = _normalizeOptional(conflictGroup, 'conflictGroup'),
+       requirements = List<EvidenceRequirement>.unmodifiable(requirements) {
     if (this.id.isEmpty) {
       throw ArgumentError.value(id, 'id', 'Rule ID must not be blank.');
     }
     if (this.threat.isEmpty) {
-      throw ArgumentError.value(threat, 'threat', 'Threat ID must not be blank.');
+      throw ArgumentError.value(
+        threat,
+        'threat',
+        'Threat ID must not be blank.',
+      );
     }
     if (this.reason.isEmpty) {
       throw ArgumentError.value(reason, 'reason', 'Reason must not be blank.');
@@ -113,10 +121,8 @@ class AssessmentGenerationDiagnostic {
 }
 
 class AssessmentRuleConflict {
-  AssessmentRuleConflict({
-    required this.group,
-    required List<String> ruleIds,
-  }) : ruleIds = List<String>.unmodifiable(ruleIds);
+  AssessmentRuleConflict({required this.group, required List<String> ruleIds})
+    : ruleIds = List<String>.unmodifiable(ruleIds);
 
   final String group;
   final List<String> ruleIds;
@@ -127,10 +133,11 @@ class AssessmentGenerationResult {
     required List<Assessment> assessments,
     required List<AssessmentGenerationDiagnostic> diagnostics,
     required List<AssessmentRuleConflict> conflicts,
-  })  : assessments = List<Assessment>.unmodifiable(assessments),
-        diagnostics =
-            List<AssessmentGenerationDiagnostic>.unmodifiable(diagnostics),
-        conflicts = List<AssessmentRuleConflict>.unmodifiable(conflicts);
+  }) : assessments = List<Assessment>.unmodifiable(assessments),
+       diagnostics = List<AssessmentGenerationDiagnostic>.unmodifiable(
+         diagnostics,
+       ),
+       conflicts = List<AssessmentRuleConflict>.unmodifiable(conflicts);
 
   final List<Assessment> assessments;
   final List<AssessmentGenerationDiagnostic> diagnostics;
@@ -140,15 +147,11 @@ class AssessmentGenerationResult {
 /// Applies explicit rules without inferring threat, confidence, or correlation.
 class AssessmentGenerator {
   AssessmentGenerator({required List<AssessmentRule> rules})
-      : rules = List<AssessmentRule>.unmodifiable(rules) {
+    : rules = List<AssessmentRule>.unmodifiable(rules) {
     final ids = <String>{};
     for (final rule in this.rules) {
       if (!ids.add(rule.id)) {
-        throw ArgumentError.value(
-          rule.id,
-          'rules',
-          'Rule IDs must be unique.',
-        );
+        throw ArgumentError.value(rule.id, 'rules', 'Rule IDs must be unique.');
       }
     }
   }
@@ -181,7 +184,9 @@ class AssessmentGenerator {
         );
         continue;
       }
-      outcomesBySignal.putIfAbsent(outcome.signal, () => <Evidence>[]).add(outcome);
+      outcomesBySignal
+          .putIfAbsent(outcome.signal, () => <Evidence>[])
+          .add(outcome);
     }
 
     // Preserve run-level coverage issues, including signals no rule references.
@@ -249,7 +254,8 @@ class AssessmentGenerator {
           continue;
         }
 
-        final outcomes = outcomesBySignal[requirement.signalId] ?? const <Evidence>[];
+        final outcomes =
+            outcomesBySignal[requirement.signalId] ?? const <Evidence>[];
         if (outcomes.isEmpty) {
           diagnostics.add(
             AssessmentGenerationDiagnostic(
@@ -347,7 +353,9 @@ class AssessmentGenerator {
     for (final candidate in candidates) {
       final group = candidate.rule.conflictGroup;
       if (group != null) {
-        groupedCandidates.putIfAbsent(group, () => <_AssessmentCandidate>[]).add(candidate);
+        groupedCandidates
+            .putIfAbsent(group, () => <_AssessmentCandidate>[])
+            .add(candidate);
       }
     }
 
@@ -355,9 +363,13 @@ class AssessmentGenerator {
     final conflicts = <AssessmentRuleConflict>[];
     for (final entry in groupedCandidates.entries) {
       if (entry.value.length > 1) {
-        final ruleIds = entry.value.map((candidate) => candidate.rule.id).toList();
+        final ruleIds = entry.value
+            .map((candidate) => candidate.rule.id)
+            .toList();
         suppressedRuleIds.addAll(ruleIds);
-        conflicts.add(AssessmentRuleConflict(group: entry.key, ruleIds: ruleIds));
+        conflicts.add(
+          AssessmentRuleConflict(group: entry.key, ruleIds: ruleIds),
+        );
       }
     }
 
@@ -387,7 +399,11 @@ String? _normalizeOptional(String? value, String name) {
   if (value == null) return null;
   final normalized = value.trim();
   if (normalized.isEmpty) {
-    throw ArgumentError.value(value, name, '$name must not be blank when provided.');
+    throw ArgumentError.value(
+      value,
+      name,
+      '$name must not be blank when provided.',
+    );
   }
   return normalized;
 }
