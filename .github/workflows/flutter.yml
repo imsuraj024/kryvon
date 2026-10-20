@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-
 jobs:
   flutter:
     runs-on: ubuntu-latest
@@ -28,17 +25,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       - name: Format Dart sources
-        run: dart format .
-      - name: Commit formatting and package layout fixes
-        run: |
-          if [ -d docs ]; then mv docs doc; fi
-          if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "style: format sources and normalize package layout"
-            git push origin "HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          fi
+        run: dart format --output=none --set-exit-if-changed .
       - name: Analyze
         run: flutter analyze
       - name: Run Dart tests
