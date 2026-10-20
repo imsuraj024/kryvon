@@ -17,7 +17,11 @@ class AndroidPlatformDetector implements SignalDetector {
     this.timeout = const Duration(seconds: 2),
   }) : _channel = channel ?? const MethodChannel('dev.kryvon/security.v1') {
     if (timeout <= Duration.zero) {
-      throw ArgumentError.value(timeout, 'timeout', 'Timeout must be positive.');
+      throw ArgumentError.value(
+        timeout,
+        'timeout',
+        'Timeout must be positive.',
+      );
     }
   }
 
@@ -46,7 +50,9 @@ class AndroidPlatformDetector implements SignalDetector {
         status: EvidenceStatus.unsupported,
         confidence: null,
         source: 'kryvon.android.channel',
-        metadata: const <String, Object?>{'diagnosticCode': 'unsupported_signal'},
+        metadata: const <String, Object?>{
+          'diagnosticCode': 'unsupported_signal',
+        },
       );
     }
     if (request.platform.trim().toLowerCase() != 'android') {
@@ -55,22 +61,21 @@ class AndroidPlatformDetector implements SignalDetector {
         status: EvidenceStatus.unsupported,
         confidence: null,
         source: 'kryvon.android.channel',
-        metadata: const <String, Object?>{'diagnosticCode': 'platform_unsupported'},
+        metadata: const <String, Object?>{
+          'diagnosticCode': 'platform_unsupported',
+        },
       );
     }
 
     try {
       final response = await _channel
-          .invokeMapMethod<String, Object?>(
-            'evaluateSignal',
-            <String, Object?>{
-              'protocolVersion': 1,
-              'requestId': request.requestId,
-              'signalId': request.signalId,
-              'context': request.context.name,
-              'configuration': request.configuration,
-            },
-          )
+          .invokeMapMethod<String, Object?>('evaluateSignal', <String, Object?>{
+            'protocolVersion': 1,
+            'requestId': request.requestId,
+            'signalId': request.signalId,
+            'context': request.context.name,
+            'configuration': request.configuration,
+          })
           .timeout(timeout);
       return _parseResponse(request, response);
     } on TimeoutException {
@@ -135,12 +140,12 @@ class AndroidPlatformDetector implements SignalDetector {
   }
 
   Evidence _failed(DetectorRequest request, String code) => _evidence(
-        request,
-        status: EvidenceStatus.failed,
-        confidence: null,
-        source: 'kryvon.android.channel',
-        metadata: <String, Object?>{'diagnosticCode': code},
-      );
+    request,
+    status: EvidenceStatus.failed,
+    confidence: null,
+    source: 'kryvon.android.channel',
+    metadata: <String, Object?>{'diagnosticCode': code},
+  );
 
   Evidence _evidence(
     DetectorRequest request, {
@@ -148,18 +153,17 @@ class AndroidPlatformDetector implements SignalDetector {
     required Confidence? confidence,
     required String source,
     required Map<String, Object?> metadata,
-  }) =>
-      Evidence(
-        signal: request.signalId,
-        status: status,
-        confidence: confidence,
-        source: source,
-        platform: request.platform.trim().isEmpty
-            ? 'unknown'
-            : request.platform.trim().toLowerCase(),
-        observedAt: DateTime.now().toUtc(),
-        metadata: metadata,
-      );
+  }) => Evidence(
+    signal: request.signalId,
+    status: status,
+    confidence: confidence,
+    source: source,
+    platform: request.platform.trim().isEmpty
+        ? 'unknown'
+        : request.platform.trim().toLowerCase(),
+    observedAt: DateTime.now().toUtc(),
+    metadata: metadata,
+  );
 
   static EvidenceStatus? _parseStatus(Object? value) {
     switch (value) {
@@ -203,8 +207,7 @@ class AndroidPlatformDetector implements SignalDetector {
     }
     if (value is Map) {
       return value.entries.every(
-        (entry) =>
-            entry.key is String && _isJsonValue(entry.value, depth + 1),
+        (entry) => entry.key is String && _isJsonValue(entry.value, depth + 1),
       );
     }
     return false;

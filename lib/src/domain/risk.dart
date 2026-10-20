@@ -25,8 +25,8 @@ class RiskAssessment {
     required this.level,
     required List<RiskContributor> contributors,
     List<String> uncertainties = const <String>[],
-  })  : contributors = List<RiskContributor>.unmodifiable(contributors),
-        uncertainties = List<String>.unmodifiable(uncertainties);
+  }) : contributors = List<RiskContributor>.unmodifiable(contributors),
+       uncertainties = List<String>.unmodifiable(uncertainties);
 
   final RiskLevel level;
   final List<RiskContributor> contributors;
@@ -52,7 +52,10 @@ class RiskAssessment {
 class RiskEvaluator {
   const RiskEvaluator();
 
-  RiskAssessment evaluate(List<Assessment> assessments, {SignalRun? signalRun}) {
+  RiskAssessment evaluate(
+    List<Assessment> assessments, {
+    SignalRun? signalRun,
+  }) {
     _validateAssessments(assessments);
     final contributors = assessments
         .map(
@@ -71,22 +74,39 @@ class RiskEvaluator {
       if (assessment.confidence == Confidence.low) {
         uncertainties.add('Assessment "${assessment.id}" has low confidence.');
       } else if (assessment.confidence == Confidence.medium) {
-        uncertainties.add('Assessment "${assessment.id}" has medium confidence.');
+        uncertainties.add(
+          'Assessment "${assessment.id}" has medium confidence.',
+        );
       }
     }
 
     if (assessments.isEmpty) {
       if (signalRun?.allNotDetected == true) {
-        return RiskAssessment(level: RiskLevel.lowRisk, contributors: contributors, uncertainties: uncertainties);
+        return RiskAssessment(
+          level: RiskLevel.lowRisk,
+          contributors: contributors,
+          uncertainties: uncertainties,
+        );
       }
       if (signalRun == null) {
-        uncertainties.add('No assessments or signal coverage were supplied; risk cannot be established.');
-      } else if (signalRun.isComplete && signalRun.outcomes.any((e) => e.status == EvidenceStatus.detected)) {
-        uncertainties.add('Detected signal evidence has not been interpreted by an assessment.');
+        uncertainties.add(
+          'No assessments or signal coverage were supplied; risk cannot be established.',
+        );
+      } else if (signalRun.isComplete &&
+          signalRun.outcomes.any((e) => e.status == EvidenceStatus.detected)) {
+        uncertainties.add(
+          'Detected signal evidence has not been interpreted by an assessment.',
+        );
       } else if (signalRun.isComplete) {
-        uncertainties.add('Negative outcomes do not have sufficient confidence to establish low risk.');
+        uncertainties.add(
+          'Negative outcomes do not have sufficient confidence to establish low risk.',
+        );
       }
-      return RiskAssessment(level: RiskLevel.unknown, contributors: contributors, uncertainties: uncertainties);
+      return RiskAssessment(
+        level: RiskLevel.unknown,
+        contributors: contributors,
+        uncertainties: uncertainties,
+      );
     }
 
     var highestRank = -1;
@@ -104,7 +124,11 @@ class RiskEvaluator {
       Severity.high => RiskLevel.highRisk,
       Severity.critical => RiskLevel.critical,
     };
-    return RiskAssessment(level: level, contributors: contributors, uncertainties: uncertainties);
+    return RiskAssessment(
+      level: level,
+      contributors: contributors,
+      uncertainties: uncertainties,
+    );
   }
 
   void _validateAssessments(List<Assessment> assessments) {
@@ -112,29 +136,49 @@ class RiskEvaluator {
     for (final assessment in assessments) {
       final id = assessment.id.trim();
       if (id.isEmpty) {
-        throw ArgumentError.value(assessment.id, 'assessments.id', 'Assessment IDs must not be empty.');
+        throw ArgumentError.value(
+          assessment.id,
+          'assessments.id',
+          'Assessment IDs must not be empty.',
+        );
       }
       if (!ids.add(id)) {
-        throw ArgumentError.value(assessment.id, 'assessments', 'Assessment IDs must be unique within an evaluation.');
+        throw ArgumentError.value(
+          assessment.id,
+          'assessments',
+          'Assessment IDs must be unique within an evaluation.',
+        );
       }
       if (assessment.threat.trim().isEmpty) {
-        throw ArgumentError.value(assessment.threat, 'assessments.threat', 'Threat identifiers must not be empty.');
+        throw ArgumentError.value(
+          assessment.threat,
+          'assessments.threat',
+          'Threat identifiers must not be empty.',
+        );
       }
       if (assessment.reason.trim().isEmpty) {
-        throw ArgumentError.value(assessment.reason, 'assessments.reason', 'Assessment reasons must not be empty.');
+        throw ArgumentError.value(
+          assessment.reason,
+          'assessments.reason',
+          'Assessment reasons must not be empty.',
+        );
       }
       final key = assessment.correlationKey;
       if (key != null && key.trim().isEmpty) {
-        throw ArgumentError.value(key, 'assessments.correlationKey', 'Correlation keys must be null or non-empty.');
+        throw ArgumentError.value(
+          key,
+          'assessments.correlationKey',
+          'Correlation keys must be null or non-empty.',
+        );
       }
     }
   }
 
   int _severityRank(Severity severity) => switch (severity) {
-        Severity.info => 0,
-        Severity.low => 1,
-        Severity.medium => 2,
-        Severity.high => 3,
-        Severity.critical => 4,
-      };
+    Severity.info => 0,
+    Severity.low => 1,
+    Severity.medium => 2,
+    Severity.high => 3,
+    Severity.critical => 4,
+  };
 }

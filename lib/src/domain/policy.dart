@@ -29,11 +29,18 @@ class KryvonPolicy {
       throw ArgumentError.value(id, 'id', 'Policy ID must not be empty.');
     }
     if (version < 1) {
-      throw ArgumentError.value(version, 'version', 'Policy version must be positive.');
+      throw ArgumentError.value(
+        version,
+        'version',
+        'Policy version must be positive.',
+      );
     }
   }
 
-  KryvonDecision decide({required AssessmentContext context, required RiskAssessment risk}) {
+  KryvonDecision decide({
+    required AssessmentContext context,
+    required RiskAssessment risk,
+  }) {
     switch (risk.level) {
       case RiskLevel.unknown:
         return unknownDecision;

@@ -4,14 +4,17 @@ import 'kryvon_enums.dart';
 /// Snapshot of expected signal coverage for one assessment pass.
 /// This contract does not implement or invoke detectors.
 class SignalRun {
-  SignalRun({required List<String> expectedSignals, required List<Evidence> outcomes})
-      : expectedSignals = List<String>.unmodifiable(expectedSignals),
-        outcomes = List<Evidence>.unmodifiable(outcomes);
+  SignalRun({
+    required List<String> expectedSignals,
+    required List<Evidence> outcomes,
+  }) : expectedSignals = List<String>.unmodifiable(expectedSignals),
+       outcomes = List<Evidence>.unmodifiable(outcomes);
 
   final List<String> expectedSignals;
   final List<Evidence> outcomes;
 
-  bool get hasUniqueExpectedSignals => expectedSignals.isNotEmpty &&
+  bool get hasUniqueExpectedSignals =>
+      expectedSignals.isNotEmpty &&
       expectedSignals.every(
         (signal) => signal.trim().isNotEmpty && signal == signal.trim(),
       ) &&
@@ -40,7 +43,7 @@ class SignalRun {
       }
       final outcome = matching.single;
       if ((outcome.status != EvidenceStatus.detected &&
-          outcome.status != EvidenceStatus.notDetected) ||
+              outcome.status != EvidenceStatus.notDetected) ||
           outcome.confidence == null) {
         return false;
       }
@@ -50,7 +53,13 @@ class SignalRun {
 
   /// Negative results count as low risk only when every expected signal was
   /// checked and every negative result has high confidence.
-  bool get allNotDetected => isComplete && outcomes.every((outcome) => outcome.status == EvidenceStatus.notDetected && outcome.confidence == Confidence.high);
+  bool get allNotDetected =>
+      isComplete &&
+      outcomes.every(
+        (outcome) =>
+            outcome.status == EvidenceStatus.notDetected &&
+            outcome.confidence == Confidence.high,
+      );
 
   List<String> get uncertainties {
     final expected = expectedSignals.toSet();
@@ -65,14 +74,21 @@ class SignalRun {
       if (outcome.status == EvidenceStatus.failed) {
         issues.add('Signal "${outcome.signal}" failed.');
       } else if (outcome.status == EvidenceStatus.unsupported) {
-        issues.add('Signal "${outcome.signal}" is unsupported on this platform.');
+        issues.add(
+          'Signal "${outcome.signal}" is unsupported on this platform.',
+        );
       } else if (outcome.status == EvidenceStatus.unknown) {
         issues.add('Signal "${outcome.signal}" returned an unknown outcome.');
       }
-      if ((outcome.status == EvidenceStatus.detected || outcome.status == EvidenceStatus.notDetected) && outcome.confidence == null) {
+      if ((outcome.status == EvidenceStatus.detected ||
+              outcome.status == EvidenceStatus.notDetected) &&
+          outcome.confidence == null) {
         issues.add('Signal "${outcome.signal}" has no confidence value.');
-      } else if (outcome.status == EvidenceStatus.notDetected && outcome.confidence != Confidence.high) {
-        issues.add('Signal "${outcome.signal}" has insufficient confidence to establish a negative result.');
+      } else if (outcome.status == EvidenceStatus.notDetected &&
+          outcome.confidence != Confidence.high) {
+        issues.add(
+          'Signal "${outcome.signal}" has insufficient confidence to establish a negative result.',
+        );
       }
     }
     for (final signal in expectedSignals) {

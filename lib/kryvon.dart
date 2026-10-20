@@ -1,5 +1,6 @@
 /// Runtime security assessment and policy engine for Flutter applications.
 library;
+
 ///
 /// Kryvon separates platform observations from threat interpretation, risk
 /// evaluation, and host-owned enforcement decisions. Platform checks are

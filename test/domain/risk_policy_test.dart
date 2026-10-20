@@ -1,7 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryvon/kryvon.dart';
 
-Assessment assessment({String id = 'a1', Severity severity = Severity.medium, Confidence confidence = Confidence.high}) => Assessment(id: id, threat: 'TEST_THREAT', severity: severity, confidence: confidence, supportingEvidence: const [], reason: 'test reason');
+Assessment assessment({
+  String id = 'a1',
+  Severity severity = Severity.medium,
+  Confidence confidence = Confidence.high,
+}) => Assessment(
+  id: id,
+  threat: 'TEST_THREAT',
+  severity: severity,
+  confidence: confidence,
+  supportingEvidence: const [],
+  reason: 'test reason',
+);
 
 void main() {
   group('RiskEvaluator', () {
@@ -15,21 +26,41 @@ void main() {
     });
 
     test('maps the highest severity to risk', () {
-      expect(evaluator.evaluate([assessment(severity: Severity.info)]).level, RiskLevel.lowRisk);
-      expect(evaluator.evaluate([assessment(severity: Severity.low)]).level, RiskLevel.lowRisk);
-      expect(evaluator.evaluate([assessment(severity: Severity.medium)]).level, RiskLevel.elevated);
-      expect(evaluator.evaluate([assessment(severity: Severity.high)]).level, RiskLevel.highRisk);
-      expect(evaluator.evaluate([assessment(severity: Severity.critical)]).level, RiskLevel.critical);
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.info)]).level,
+        RiskLevel.lowRisk,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.low)]).level,
+        RiskLevel.lowRisk,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.medium)]).level,
+        RiskLevel.elevated,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.high)]).level,
+        RiskLevel.highRisk,
+      );
+      expect(
+        evaluator.evaluate([assessment(severity: Severity.critical)]).level,
+        RiskLevel.critical,
+      );
     });
 
     test('does not downgrade high severity because confidence is low', () {
-      final result = evaluator.evaluate([assessment(severity: Severity.high, confidence: Confidence.low)]);
+      final result = evaluator.evaluate([
+        assessment(severity: Severity.high, confidence: Confidence.low),
+      ]);
       expect(result.level, RiskLevel.highRisk);
       expect(result.uncertainties, hasLength(1));
     });
 
     test('records medium and low confidence as uncertainty', () {
-      final result = evaluator.evaluate([assessment(id: 'low', confidence: Confidence.low), assessment(id: 'medium', confidence: Confidence.medium)]);
+      final result = evaluator.evaluate([
+        assessment(id: 'low', confidence: Confidence.low),
+        assessment(id: 'medium', confidence: Confidence.medium),
+      ]);
       expect(result.uncertainties, hasLength(2));
     });
 
@@ -63,32 +94,75 @@ void main() {
         correlationKey: correlationKey,
       );
 
-      expect(() => evaluator.evaluate([build(threat: ' ')]), throwsArgumentError);
-      expect(() => evaluator.evaluate([build(reason: ' ')]), throwsArgumentError);
-      expect(() => evaluator.evaluate([build(correlationKey: ' ')]), throwsArgumentError);
+      expect(
+        () => evaluator.evaluate([build(threat: ' ')]),
+        throwsArgumentError,
+      );
+      expect(
+        () => evaluator.evaluate([build(reason: ' ')]),
+        throwsArgumentError,
+      );
+      expect(
+        () => evaluator.evaluate([build(correlationKey: ' ')]),
+        throwsArgumentError,
+      );
     });
 
     test('preserves contributors in input order', () {
-      final result = evaluator.evaluate([assessment(id: 'a1', severity: Severity.low), assessment(id: 'a2', severity: Severity.high)]);
+      final result = evaluator.evaluate([
+        assessment(id: 'a1', severity: Severity.low),
+        assessment(id: 'a2', severity: Severity.high),
+      ]);
       expect(result.contributors.map((e) => e.assessmentId), ['a1', 'a2']);
     });
 
     test('result collections cannot be mutated by consumers', () {
-      final result = evaluator.evaluate([assessment(confidence: Confidence.low)]);
-      expect(() => result.contributors.add(const RiskContributor(assessmentId: 'x', severity: Severity.low, confidence: Confidence.high, reason: 'x')), throwsUnsupportedError);
+      final result = evaluator.evaluate([
+        assessment(confidence: Confidence.low),
+      ]);
+      expect(
+        () => result.contributors.add(
+          const RiskContributor(
+            assessmentId: 'x',
+            severity: Severity.low,
+            confidence: Confidence.high,
+            reason: 'x',
+          ),
+        ),
+        throwsUnsupportedError,
+      );
       expect(() => result.uncertainties.add('mutated'), throwsUnsupportedError);
     });
 
-    test('keeps correlated contributors traceable without counting them as independent', () {
-      final result = evaluator.evaluate([
-        Assessment(id: 'a1', threat: 'ROOT_ARTIFACT', severity: Severity.high, confidence: Confidence.high, supportingEvidence: const [], reason: 'root file', correlationKey: 'device-compromise'),
-        Assessment(id: 'a2', threat: 'ROOT_ARTIFACT', severity: Severity.high, confidence: Confidence.high, supportingEvidence: const [], reason: 'root property', correlationKey: 'device-compromise'),
-        assessment(id: 'a3', severity: Severity.medium),
-      ]);
-      expect(result.level, RiskLevel.highRisk);
-      expect(result.contributors, hasLength(3));
-      expect(result.independentContributorCount, 2);
-    });
+    test(
+      'keeps correlated contributors traceable without counting them as independent',
+      () {
+        final result = evaluator.evaluate([
+          Assessment(
+            id: 'a1',
+            threat: 'ROOT_ARTIFACT',
+            severity: Severity.high,
+            confidence: Confidence.high,
+            supportingEvidence: const [],
+            reason: 'root file',
+            correlationKey: 'device-compromise',
+          ),
+          Assessment(
+            id: 'a2',
+            threat: 'ROOT_ARTIFACT',
+            severity: Severity.high,
+            confidence: Confidence.high,
+            supportingEvidence: const [],
+            reason: 'root property',
+            correlationKey: 'device-compromise',
+          ),
+          assessment(id: 'a3', severity: Severity.medium),
+        ]);
+        expect(result.level, RiskLevel.highRisk);
+        expect(result.contributors, hasLength(3));
+        expect(result.independentContributorCount, 2);
+      },
+    );
     test('does not infer correlation from a shared threat identifier', () {
       final result = evaluator.evaluate([
         assessment(id: 'same-threat-1'),
@@ -97,90 +171,154 @@ void main() {
       expect(result.independentContributorCount, 2);
     });
 
-    test('normalizes explicit correlation keys and treats blank keys as absent', () {
-      final grouped = evaluator.evaluate([
-        Assessment(
-          id: 'a1',
-          threat: 'ROOT',
-          severity: Severity.high,
-          confidence: Confidence.high,
-          supportingEvidence: const [],
-          reason: 'first observation',
-          correlationKey: ' device-root ',
-        ),
-        Assessment(
-          id: 'a2',
-          threat: 'ROOT',
-          severity: Severity.high,
-          confidence: Confidence.high,
-          supportingEvidence: const [],
-          reason: 'second observation',
-          correlationKey: 'device-root',
-        ),
-      ]);
-      expect(grouped.independentContributorCount, 1);
-
-      final direct = RiskAssessment(
-        level: RiskLevel.unknown,
-        contributors: const [
-          RiskContributor(
-            assessmentId: 'a1',
-            severity: Severity.low,
+    test(
+      'normalizes explicit correlation keys and treats blank keys as absent',
+      () {
+        final grouped = evaluator.evaluate([
+          Assessment(
+            id: 'a1',
+            threat: 'ROOT',
+            severity: Severity.high,
             confidence: Confidence.high,
-            reason: 'no key',
+            supportingEvidence: const [],
+            reason: 'first observation',
+            correlationKey: ' device-root ',
           ),
-          RiskContributor(
-            assessmentId: 'a2',
-            severity: Severity.low,
+          Assessment(
+            id: 'a2',
+            threat: 'ROOT',
+            severity: Severity.high,
             confidence: Confidence.high,
-            reason: 'blank key',
-            correlationKey: ' ',
+            supportingEvidence: const [],
+            reason: 'second observation',
+            correlationKey: 'device-root',
           ),
-        ],
-      );
-      expect(direct.independentContributorCount, 2);
-    });
+        ]);
+        expect(grouped.independentContributorCount, 1);
 
+        final direct = RiskAssessment(
+          level: RiskLevel.unknown,
+          contributors: const [
+            RiskContributor(
+              assessmentId: 'a1',
+              severity: Severity.low,
+              confidence: Confidence.high,
+              reason: 'no key',
+            ),
+            RiskContributor(
+              assessmentId: 'a2',
+              severity: Severity.low,
+              confidence: Confidence.high,
+              reason: 'blank key',
+              correlationKey: ' ',
+            ),
+          ],
+        );
+        expect(direct.independentContributorCount, 2);
+      },
+    );
   });
 
   group('KryvonPolicy', () {
     const policy = KryvonPolicy();
-    RiskAssessment risk(RiskLevel level) => RiskAssessment(level: level, contributors: const []);
+    RiskAssessment risk(RiskLevel level) =>
+        RiskAssessment(level: level, contributors: const []);
 
     test('maps every default risk level explicitly', () {
-      expect(policy.decide(context: AssessmentContext.appStartup, risk: risk(RiskLevel.lowRisk)), KryvonDecision.allow);
-      expect(policy.decide(context: AssessmentContext.appStartup, risk: risk(RiskLevel.elevated)), KryvonDecision.monitor);
-      expect(policy.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.elevated)), KryvonDecision.restrict);
-      expect(policy.decide(context: AssessmentContext.accountAccess, risk: risk(RiskLevel.highRisk)), KryvonDecision.restrict);
-      expect(policy.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.critical)), KryvonDecision.block);
-      expect(policy.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.unknown)), KryvonDecision.monitor);
+      expect(
+        policy.decide(
+          context: AssessmentContext.appStartup,
+          risk: risk(RiskLevel.lowRisk),
+        ),
+        KryvonDecision.allow,
+      );
+      expect(
+        policy.decide(
+          context: AssessmentContext.appStartup,
+          risk: risk(RiskLevel.elevated),
+        ),
+        KryvonDecision.monitor,
+      );
+      expect(
+        policy.decide(
+          context: AssessmentContext.transaction,
+          risk: risk(RiskLevel.elevated),
+        ),
+        KryvonDecision.restrict,
+      );
+      expect(
+        policy.decide(
+          context: AssessmentContext.accountAccess,
+          risk: risk(RiskLevel.highRisk),
+        ),
+        KryvonDecision.restrict,
+      );
+      expect(
+        policy.decide(
+          context: AssessmentContext.transaction,
+          risk: risk(RiskLevel.critical),
+        ),
+        KryvonDecision.block,
+      );
+      expect(
+        policy.decide(
+          context: AssessmentContext.transaction,
+          risk: risk(RiskLevel.unknown),
+        ),
+        KryvonDecision.monitor,
+      );
     });
 
-    test('rejects blank policy IDs and non-positive versions at engine boundary', () {
-      const engine = KryvonEngine();
-      expect(
-        () => engine.evaluate(
-          context: AssessmentContext.appStartup,
-          assessments: const [],
-          policy: KryvonPolicy(id: '  '),
-        ),
-        throwsArgumentError,
-      );
-      expect(
-        () => engine.evaluate(
-          context: AssessmentContext.appStartup,
-          assessments: const [],
-          policy: KryvonPolicy(version: 0),
-        ),
-        throwsArgumentError,
-      );
-    });
+    test(
+      'rejects blank policy IDs and non-positive versions at engine boundary',
+      () {
+        const engine = KryvonEngine();
+        expect(
+          () => engine.evaluate(
+            context: AssessmentContext.appStartup,
+            assessments: const [],
+            policy: KryvonPolicy(id: '  '),
+          ),
+          throwsArgumentError,
+        );
+        expect(
+          () => engine.evaluate(
+            context: AssessmentContext.appStartup,
+            assessments: const [],
+            policy: KryvonPolicy(version: 0),
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
 
     test('supports explicit overrides for unknown and elevated risk', () {
-      const strict = KryvonPolicy(unknownDecision: KryvonDecision.block, elevatedRiskDecision: KryvonDecision.restrict, elevatedTransactionDecision: KryvonDecision.block);
-      expect(strict.decide(context: AssessmentContext.appStartup, risk: risk(RiskLevel.unknown)), KryvonDecision.block);
-      expect(strict.decide(context: AssessmentContext.sessionStart, risk: risk(RiskLevel.elevated)), KryvonDecision.restrict);
-      expect(strict.decide(context: AssessmentContext.transaction, risk: risk(RiskLevel.elevated)), KryvonDecision.block);
+      const strict = KryvonPolicy(
+        unknownDecision: KryvonDecision.block,
+        elevatedRiskDecision: KryvonDecision.restrict,
+        elevatedTransactionDecision: KryvonDecision.block,
+      );
+      expect(
+        strict.decide(
+          context: AssessmentContext.appStartup,
+          risk: risk(RiskLevel.unknown),
+        ),
+        KryvonDecision.block,
+      );
+      expect(
+        strict.decide(
+          context: AssessmentContext.sessionStart,
+          risk: risk(RiskLevel.elevated),
+        ),
+        KryvonDecision.restrict,
+      );
+      expect(
+        strict.decide(
+          context: AssessmentContext.transaction,
+          risk: risk(RiskLevel.elevated),
+        ),
+        KryvonDecision.block,
+      );
     });
   });
 }
